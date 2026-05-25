@@ -1,0 +1,100 @@
+steps:
+  # Backend
+  - name: "python:3.12"
+    id: "backend-lint"
+    entrypoint: "bash"
+    args:
+      [
+        "-c",
+        "pip install ruff mypy && ruff check backend/ && mypy backend/",
+      ]
+  - name: "python:3.12"
+    id: "backend-test"
+    entrypoint: "bash"
+    args:
+      [
+        "-c",
+        "pip install -r backend/requirements/dev.txt && pytest backend/tests/unit/",
+      ]
+  - name: "gcr.io/cloud-builders/docker"
+    id: "backend-build"
+    args:
+      [
+        "build",
+        "-t",
+        "us-central1-docker.pkg.dev/$PROJECT_ID/edugenie/backend:$SHORT_SHA",
+        "-f",
+        "backend/Dockerfile",
+        "backend/",
+      ]
+    waitFor: ["backend-test"]
+  - name: "gcr.io/cloud-builders/docker"
+    id: "backend-push"
+    args:
+      [
+        "push",
+        "us-central1-docker.pkg.dev/$PROJECT_ID/edugenie/backend:$SHORT_SHA",
+      ]
+    waitFor: ["backend-build"]
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    id: "backend-deploy"
+    entrypoint: "gcloud"
+    args:
+      [
+        "run",
+        "deploy",
+        "edugenie-backend",
+        "--image=us-central1-docker.pkg.dev/$PROJECT_ID/edugenie/backend:$SHORT_SHA",
+        "--region=us-central1",
+        "--platform=managed",
+        "--allow-unauthenticated",
+      ]
+    waitFor: ["backend-push"]
+
+  # Frontend
+  - name: "node:20"
+    id: "frontend-lint"
+    entrypoint: "bash"
+    args: ["-c", "cd frontend-web && npm ci && npm run lint"]
+  - name: "node:20"
+    id: "frontend-build"
+    entrypoint: "bash"
+    args: ["-c", "cd frontend-web && npm ci && npm run build"]
+    waitFor: ["frontend-lint"]
+  - name: "gcr.io/cloud-builders/docker"
+    id: "frontend-image"
+    args:
+      [
+        "build",
+        "-t",
+        "us-central1-docker.pkg.dev/$PROJECT_ID/edugenie/frontend:$SHORT_SHA",
+        "-f",
+        "frontend-web/Dockerfile",
+        "frontend-web/",
+      ]
+    waitFor: ["frontend-build"]
+  - name: "gcr.io/cloud-builders/docker"
+    id: "frontend-push"
+    args:
+      [
+        "push",
+        "us-central1-docker.pkg.dev/$PROJECT_ID/edugenie/frontend:$SHORT_SHA",
+      ]
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    id: "frontend-deploy"
+    entrypoint: "gcloud"
+    args:
+      [
+        "run",
+        "deploy",
+        "edugenie-frontend",
+        "--image=us-central1-docker.pkg.dev/$PROJECT_ID/edugenie/frontend:$SHORT_SHA",
+        "--region=us-central1",
+        "--platform=managed",
+        "--allow-unauthenticated",
+      ]
+    waitFor: ["frontend-push"]
+
+timeout: 1800s
+options:
+  machineType: "E2_HIGHCPU_8"

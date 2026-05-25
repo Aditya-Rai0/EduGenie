@@ -1,0 +1,47 @@
+[project]
+name = "edugenie-backend"
+version = "0.1.0"
+description = "EduGenie OS — FastAPI backend"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.111",
+    "uvicorn[standard]",
+    "pydantic>=2.0",
+    "pydantic-settings",
+    "sqlalchemy[asyncio]>=2.0",
+    "asyncpg",
+    "alembic",
+    "redis[hiredis]",
+    "rq",
+    "httpx",
+    "python-jose[cryptography]",
+    "passlib[bcrypt]",
+    "python-multipart",
+    "sendgrid",
+    "twilio",
+    "stripe",
+    "algoliasearch",
+    "openai",
+    "langgraph",
+    "langchain",
+    "langfuse",
+    "python-pptx",
+    "boto3",
+    "google-cloud-storage",
+    "google-cloud-logging",
+    "presidio-analyzer",
+    "presidio-anonymizer",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

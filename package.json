@@ -1,0 +1,21 @@
+{
+  "name": "edugenie-os",
+  "version": "0.1.0",
+  "private": true,
+  "description": "EduGenie OS — AI-Powered Course Creation & Launch Platform",
+  "scripts": {
+    "backend:dev": "cd backend && uvicorn app.main:app --reload --port 8000",
+    "frontend:dev": "cd frontend-web && npm run dev",
+    "mobile:dev": "cd mobile-app && npx expo start --tunnel",
+    "db:migrate": "cd backend && alembic upgrade head",
+    "db:rollback": "cd backend && alembic downgrade -1",
+    "lint:backend": "cd backend && ruff check .",
+    "lint:frontend": "cd frontend-web && npm run lint",
+    "test:backend": "cd backend && pytest",
+    "test:frontend": "cd frontend-web && npm run test",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "prettier": "^3.2.0"
+  }
+}

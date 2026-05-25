@@ -1,0 +1,54 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+*.so
+
+# --- Node ---
+node_modules/
+.pnp
+.pnp.js
+.next/
+out/
+build/
+.npm/
+.eslintcache
+
+# --- Python & Node packages ---
+*.env
+*.env.local
+*.env.*.local
+
+# --- Terraform ---
+*.tfstate
+*.tfstate.*
+.terraform/
+crash.log
+override.tf
+*.tfplan
+
+# --- IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# --- Docker ---
+docker-compose.override.yml
+
+# --- OS ---
+Thumbs.db
+ehthumbs.db
+
+# --- Misc ---
+*.log
+*.tmp
+.cache/

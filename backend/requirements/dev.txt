@@ -1,0 +1,11 @@
+-r base.txt
+
+pytest
+pytest-asyncio
+pytest-cov
+httpx
+ruff
+mypy
+pre-commit
+factory-boy
+vcrpy
