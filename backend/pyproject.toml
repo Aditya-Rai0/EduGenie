@@ -26,7 +26,6 @@ dependencies = [
     "langchain",
     "langfuse",
     "python-pptx",
-    "boto3",
     "google-cloud-storage",
     "google-cloud-logging",
     "presidio-analyzer",

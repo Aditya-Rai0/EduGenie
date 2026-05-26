@@ -48,6 +48,29 @@ docker-compose.override.yml
 Thumbs.db
 ehthumbs.db
 
+# --- Secrets & Credentials ---
+credentials.json
+service-account.json
+*.pem
+*.key
+*.cert
+oauth*.json
+secrets/
+*.secret
+
+# --- Mobile / Expo ---
+.expo/
+*.jks
+*.keystore
+*.mobileprovision
+*.provisionprofile
+*.hprof
+
+# --- TypeScript ---
+*.tsbuildinfo
+.next/
+out/
+
 # --- Misc ---
 *.log
 *.tmp
