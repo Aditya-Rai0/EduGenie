@@ -271,7 +271,7 @@ sequenceDiagram
     participant MEDIA as MediaForge Agent
     participant EVAL as Evaluator Agent
     participant LAUNCH as Launchpad Agent
-    participant OPT as Optimizer Agent
+    participant OPTIMIZER as Optimizer Agent
     participant AI as OpenAI / ElevenLabs
     participant DB as Supabase PostgreSQL
     participant STO as Cloud Storage
@@ -371,11 +371,11 @@ sequenceDiagram
     API-->>C: Return published course URL
 
     rect rgb(240, 240, 250)
-        Note over OPT: Post-Launch (Weekly)
-        OPT->>DB: Analyze student engagement data
-        OPT->>AI: Generate improvement report
-        OPT->>DB: Save improvement report
-        OPT-->>API: Notify creator of new report
+        Note over OPTIMIZER: Post-Launch (Weekly)
+        OPTIMIZER->>DB: Analyze student engagement data
+        OPTIMIZER->>AI: Generate improvement report
+        OPTIMIZER->>DB: Save improvement report
+        OPTIMIZER-->>API: Notify creator of new report
         API-->>C: "Weekly Optimizer report ready"
     end
 ```
