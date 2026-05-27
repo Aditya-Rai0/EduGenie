@@ -1,8 +1,8 @@
 # EduGenie OS — System Architecture
 
-> **Version:** 0.1.0  
-> **Last Updated:** 2026-05-26  
-> **Stack:** FastAPI · Next.js · Expo · LangChain · LangGraph · Supabase · GCP
+> **Version:** 0.2.0  
+> **Last Updated:** 2026-05-27  
+> **Stack:** FastAPI · Next.js · Expo · LangGraph · Gemini 3.5 Flash · Supabase
 
 ---
 
@@ -18,7 +18,7 @@
 
 ## 1. High-Level System Architecture
 
-This diagram illustrates the complete network topology — from user-facing clients through GCP's edge network, into the application layer, and out to external integrations.
+This diagram illustrates the complete network topology — from user-facing clients through the application layer, into the unified Supabase backend, and out to external integrations.
 
 ```mermaid
 graph LR
@@ -27,18 +27,10 @@ graph LR
         MOBILE[Expo Mobile App<br/>React Native]
     end
 
-    subgraph Edge["GCP Edge Network"]
-        LB[Cloud Load Balancer<br/>HTTPS / WSS]
-        ARMOR[Cloud Armor<br/>WAF · Rate Limiting · DDoS]
-        CDN[Cloud CDN<br/>Static Assets · Video Cache]
-    end
-
-    subgraph Compute["Application Layer (Cloud Run)"]
+    subgraph Compute["Application Layer"]
         FE[Frontend<br/>Next.js 14+]
         API[Backend API<br/>FastAPI]
         WORKER[Background Workers<br/>RQ / BullMQ]
-        PRESIDIO[PII Scanner<br/>Microsoft Presidio]
-        LANGFUSE[AI Observability<br/>Langfuse]
     end
 
     subgraph AI["AI Agent Layer"]
@@ -52,15 +44,20 @@ graph LR
         OPT[Optimizer Agent<br/>Post-Launch Analytics]
     end
 
-    subgraph Storage["Data & Storage Layer"]
-        DB[(Supabase PostgreSQL 16<br/>+ pgvector)]
-        REDIS[(Memorystore Redis<br/>Cache · Queue · Sessions)]
-        GCS[(Cloud Storage<br/>Media · Scripts · Certificates)]
+    subgraph Supabase["Unified Backend (Supabase)"]
+        DB[(PostgreSQL 16<br/>+ pgvector)]
+        STORAGE[(Supabase Storage<br/>Media · Scripts · Certificates)]
+        AUTH[Supabase Auth<br/>JWT · Magic Link · OAuth]
+    end
+
+    subgraph Cache["Cache & Queue"]
+        REDIS[(Redis<br/>Cache · Queue · Sessions)]
+        KAFKA["Confluent Kafka<br/>(optional streaming)"]
     end
 
     subgraph External["External Integrations"]
-        OA[OpenAI<br/>GPT-4o · TTS · Whisper · DALL-E]
-        EL[ElevenLabs<br/>Voice Cloning · TTS]
+        GM[Gemini 3.5 Flash<br/>Text · Code · Reasoning]
+        EMB[Gemini Embedding 2<br/>1536d embeddings]
         ST[Stripe<br/>Payments · Connect · Tax]
         SG[SendGrid<br/>Transactional Emails]
         TW[Twilio<br/>WhatsApp Notifications]
@@ -68,21 +65,19 @@ graph LR
         PH[PostHog<br/>Analytics · Feature Flags]
     end
 
-    %% Client → Edge
-    WEB --> LB
-    MOBILE --> LB
-    LB --> ARMOR
+    subgraph Monitoring["Observability"]
+        PROM[Prometheus<br/>Metrics Collection]
+        GRAF[Grafana<br/>Dashboards · Alerts]
+    end
 
-    %% Edge → Compute
-    ARMOR -->|Route /app/*| FE
-    ARMOR -->|Route /api/*| API
-    ARMOR -->|Route /ws/*| API
-    CDN -->|Serve cached media| WEB
-    CDN -->|Serve cached media| MOBILE
+    %% Client → Compute
+    WEB --> FE
+    WEB --> API
+    MOBILE --> API
 
     %% Compute → Compute
-    FE -->|BFF API calls| API
-    API -->|Enqueue jobs| WORKER
+    FE --> API
+    API --> WORKER
 
     %% Compute → AI
     API --> ORCH
@@ -95,21 +90,28 @@ graph LR
     ORCH --> LAUNCH
     ORCH --> OPT
 
-    %% AI → Integrations
-    INTEL --> OA
-    SCRIPT --> OA
-    EVAL --> OA
-    MEDIA --> OA
-    MEDIA --> EL
-    LAUNCH --> OA
+    %% AI → Gemini
+    INTEL --> GM
+    SCRIPT --> GM
+    EVAL --> GM
+    MEDIA --> GM
+    LAUNCH --> GM
 
-    %% Compute → Storage
+    %% AI → Embeddings
+    INTEL --> EMB
+    ARCH --> EMB
+
+    %% Compute → Supabase
     API --> DB
-    API --> REDIS
-    API --> GCS
+    API --> STORAGE
+    API --> AUTH
     WORKER --> DB
+    WORKER --> STORAGE
+
+    %% Compute → Cache
+    API --> REDIS
     WORKER --> REDIS
-    WORKER --> GCS
+    WORKER --> KAFKA
 
     %% Compute → External
     API --> ST
@@ -120,136 +122,74 @@ graph LR
     WORKER --> SG
     WORKER --> TW
 
-    %% AI Observability
-    ORCH -.-> LANGFUSE
-    INTEL -.-> LANGFUSE
-    ARCH -.-> LANGFUSE
-    SCRIPT -.-> LANGFUSE
-    MEDIA -.-> LANGFUSE
-    EVAL -.-> LANGFUSE
-    LAUNCH -.-> LANGFUSE
-    OPT -.-> LANGFUSE
+    %% Monitoring
+    API -.-> PROM
+    WORKER -.-> PROM
+    PROM -.-> GRAF
 ```
 
 ---
 
 ## 2. Infrastructure & Deployment Pipeline
 
-This diagram maps the GCP infrastructure topology (provisioned via Terraform) alongside the Cloud Build CI/CD pipeline that deploys each service.
+This diagram maps the deployment topology alongside the GitHub Actions CI/CD pipeline.
 
 ```mermaid
 graph TD
-    subgraph IaC["Infrastructure as Code (Terraform)"]
-        TF_ROOT[root/main.tf]
-        TF_COMPUTE[Module: Compute<br/>Cloud Run · Cloud Batch]
-        TF_NETWORK[Module: Network<br/>VPC · Load Balancer · CDN · Armor]
-        TF_STORAGE[Module: Storage<br/>Cloud Storage · Memorystore]
-        TF_MONITORING[Module: Monitoring<br/>Dashboards · Alerts]
-        TF_CICD[Module: CI/CD<br/>Cloud Build Triggers · Artifact Registry]
+    subgraph CICD["CI/CD Pipeline (GitHub Actions)"]
+        GIT[(Source<br/>GitHub dev/main)]
+        LINT[Job 1: Lint<br/>ruff · ESLint · Prettier]
+        TYPE[Job 2: Type Check<br/>mypy · tsc]
+        UNIT[Job 3: Unit Tests<br/>pytest · Jest]
+        BUILD[Job 4: Build & Push<br/>Docker → Container Registry]
+        DEPLOY[Job 5: Deploy<br/>dev: auto on PR merge<br/>main: manual approval gate]
 
-        TF_ROOT --> TF_COMPUTE
-        TF_ROOT --> TF_NETWORK
-        TF_ROOT --> TF_STORAGE
-        TF_ROOT --> TF_MONITORING
-        TF_ROOT --> TF_CICD
-
-        subgraph Envs["Terraform Workspaces"]
-            DEV[dev/]
-            STAGING[staging/]
-            PROD[prod/]
-        end
+        GIT -->|PR to development| LINT --> TYPE --> UNIT --> BUILD
+        BUILD -->|merge to main| DEPLOY
     end
 
-    subgraph CICD["CI/CD Pipeline (Cloud Build)"]
-        GIT[(Source<br/>GitHub develop/main)]
-        LINT[Stage 1: Lint<br/>ruff · ESLint · Prettier]
-        TYPE[Stage 2: Type Check<br/>mypy · tsc]
-        UNIT[Stage 3: Unit Tests<br/>pytest · Jest]
-        SECURITY[Stage 4: Security Scan<br/>Snyk / Trivy]
-        BUILD[Stage 5: Docker Build<br/>→ Artifact Registry]
-        INTEGRATION[Stage 6: Integration Tests]
-        DEPLOY[Stage 7: Deploy to Cloud Run<br/>Blue/Green Traffic Split]
-        SMOKE[Post-Deploy: Smoke Tests<br/>→ 100% Traffic → 1h Monitoring]
-
-        GIT --> LINT --> TYPE --> UNIT --> SECURITY --> BUILD --> INTEGRATION --> DEPLOY --> SMOKE
+    subgraph ComputeServices["Compute (Hosted)"]
+        BE_SVC[Backend API<br/>FastAPI · 2 vCPU · 2GB]
+        FE_SVC[Frontend Web<br/>Next.js · 1 vCPU · 1GB]
+        WORKER_SVC[Background Workers<br/>BullMQ · 2 vCPU · 2GB]
     end
 
-    subgraph GCP["GCP Infrastructure"]
-        subgraph Networking["Networking"]
-            VPC[Custom VPC<br/>Private Subnet]
-            CONNECTOR[Serverless VPC<br/>Connector]
-            LB[Cloud Load Balancer<br/>External HTTPS]
-            ARMOR[Cloud Armor<br/>OWASP · Rate Limiting]
-            CDN[Cloud CDN<br/>Edge Caching]
-            DNS[Cloud DNS<br/>edugenie.io]
-        end
-
-        subgraph ComputeServices["Cloud Run Services"]
-            BE_SVC[edugenie-backend<br/>2 vCPU · 2GB · 1-100 instances]
-            FE_SVC[edugenie-frontend<br/>1 vCPU · 1GB · 1-50 instances]
-            WORKER_SVC[edugenie-workers<br/>2 vCPU · 2GB · 1-50 instances]
-            PRESIDIO_SVC[edugenie-presidio<br/>0-10 instances]
-        end
-
-        subgraph Batch["Cloud Batch"]
-            RENDER[FFmpeg Video Rendering<br/>Preemptible VMs · 50 parallel]
-        end
-
-        subgraph DataLayer["Data Layer"]
-            SQL[(Supabase PostgreSQL<br/>Primary + Read Replica)]
-            CACHE[(Memorystore Redis<br/>5GB Standard)]
-            BUCKET[(Cloud Storage<br/>Multi-region · Versioned)]
-        end
-
-        subgraph Security["Security & Secrets"]
-            SECRETS[Secret Manager<br/>API Keys · JWT · DB URLs]
-            IAM[IAM Service Accounts<br/>Least-Privilege Roles]
-        end
-
-        subgraph Monitoring["Monitoring"]
-            LOGS[Cloud Logging<br/>Structured JSON]
-            METRICS[Cloud Monitoring<br/>Dashboards · Alerts]
-            TRACE[Cloud Trace<br/>Distributed Tracing]
-            ERRORS[Error Reporting<br/>Exception Aggregation]
-        end
+    subgraph DataLayer["Unified Data Layer (Supabase)"]
+        SQL[(PostgreSQL 16<br/>Primary + Read Replica<br/>+ pgvector)]
+        BUCKET[(Supabase Storage<br/>Media · Certificates)]
+        AUTH_PROV[Supabase Auth<br/>JWT · OAuth · Magic Link]
     end
 
-    %% CI/CD deploys to GCP
+    subgraph CacheLayer["Cache & Queue"]
+        CACHE[(Redis<br/>Sessions · Queue · Cache)]
+        STREAM["Confluent Kafka<br/>(optional event stream)"]
+    end
+
+    subgraph MonitoringStack["Observability"]
+        PROMETHEUS[Prometheus<br/>Metrics Exporters]
+        GRAFANA[Grafana<br/>Dashboards · Alerting]
+    end
+
+    %% CI/CD deploys
     DEPLOY --> BE_SVC
     DEPLOY --> FE_SVC
     DEPLOY --> WORKER_SVC
 
-    %% Network connections
-    LB --> ARMOR
-    ARMOR --> VPC
-    VPC --> CONNECTOR
-    CONNECTOR --> BE_SVC
-    CONNECTOR --> FE_SVC
-    CONNECTOR --> WORKER_SVC
-    CDN --> BUCKET
-
     %% Service connections
-    BE_SVC --> BUCKET
-    BE_SVC --> CACHE
     BE_SVC --> SQL
-    BE_SVC --> SECRETS
+    BE_SVC --> BUCKET
+    BE_SVC --> AUTH_PROV
+    BE_SVC --> CACHE
+    WORKER_SVC --> SQL
     WORKER_SVC --> BUCKET
     WORKER_SVC --> CACHE
-    WORKER_SVC --> RENDER
-    WORKER_SVC --> SECRETS
+    WORKER_SVC --> STREAM
 
     %% Monitoring
-    BE_SVC -.-> LOGS
-    FE_SVC -.-> LOGS
-    WORKER_SVC -.-> LOGS
-    BE_SVC -.-> METRICS
-    FE_SVC -.-> METRICS
-    WORKER_SVC -.-> METRICS
-    BE_SVC -.-> TRACE
-    WORKER_SVC -.-> TRACE
-    BE_SVC -.-> ERRORS
-    FE_SVC -.-> ERRORS
-    WORKER_SVC -.-> ERRORS
+    BE_SVC -.-> PROMETHEUS
+    FE_SVC -.-> PROMETHEUS
+    WORKER_SVC -.-> PROMETHEUS
+    PROMETHEUS -.-> GRAFANA
 ```
 
 ---
@@ -260,7 +200,7 @@ This sequence diagram traces a complete course build request from the moment a c
 
 ```mermaid
 sequenceDiagram
-    participant C as Creator (Browser/Mobile)
+    participant C as "Creator (Browser/Mobile)"
     participant FE as Next.js Frontend
     participant API as FastAPI Backend
     participant Q as Redis Queue
@@ -272,15 +212,14 @@ sequenceDiagram
     participant EVAL as Evaluator Agent
     participant LAUNCH as Launchpad Agent
     participant OPTIMIZER as Optimizer Agent
-    participant AI as OpenAI / ElevenLabs
-    participant DB as Supabase PostgreSQL
-    participant STO as Cloud Storage
+    participant GM as Gemini 3.5 Flash
+    participant SUPABASE as "Supabase<br/>(DB + Storage + Auth)"
     participant EXT as Stripe / SendGrid / Algolia
 
-    C->>FE: Submits topic brief<br/>(topic, audience, depth, tone, language)
+    C->>FE: "Submits topic brief<br/>(topic, audience, depth, tone, language)"
     FE->>API: POST /courses/build
-    API->>DB: Create course record (status: drafting)
-    API->>DB: Create pipeline_run record
+    API->>SUPABASE: "Create course record (status: drafting)"
+    API->>SUPABASE: Create pipeline_run record
     API->>Q: Enqueue pipeline job
     API-->>C: Return job_id (202 Accepted)
 
@@ -289,9 +228,9 @@ sequenceDiagram
     rect rgb(240, 245, 255)
         Note over ORCH,INTEL: Stage 1 — Market Intelligence
         ORCH->>INTEL: Run with topic brief
-        INTEL->>AI: Web search + competitor analysis
-        AI-->>INTEL: Market report + angle recommendations
-        INTEL->>DB: Save market report
+        INTEL->>GM: Web search + competitor analysis
+        GM-->>INTEL: Market report + angle recommendations
+        INTEL->>SUPABASE: Save market report
         INTEL-->>ORCH: Completed
         ORCH-->>API: Stage ready for review
         API-->>C: Notify: "Market research ready"
@@ -301,9 +240,9 @@ sequenceDiagram
     rect rgb(245, 240, 255)
         Note over ORCH,ARCH: Stage 2 — Curriculum Design
         ORCH->>ARCH: Run with approved brief
-        ARCH->>AI: Design curriculum (Bloom's taxonomy)
-        AI-->>ARCH: Curriculum JSON (modules, lessons, durations)
-        ARCH->>DB: Save modules + lessons
+        ARCH->>GM: "Design curriculum (Bloom's taxonomy)"
+        GM-->>ARCH: Curriculum JSON (modules, lessons, durations)
+        ARCH->>SUPABASE: Save modules + lessons
         ARCH-->>ORCH: Completed
         ORCH-->>API: Stage ready for review
         API-->>C: Notify: "Curriculum ready"
@@ -313,10 +252,10 @@ sequenceDiagram
     rect rgb(255, 245, 240)
         Note over ORCH,SCRIPT: Stage 3 — Script Writing
         ORCH->>SCRIPT: Run with curriculum
-        SCRIPT->>AI: Generate lesson scripts (parallel)
-        AI-->>SCRIPT: Full lesson scripts with [VERIFY] flags
-        SCRIPT->>STO: Upload scripts
-        SCRIPT->>DB: Save script metadata + URLs
+        SCRIPT->>GM: Generate lesson scripts (parallel)
+        GM-->>SCRIPT: Full lesson scripts with [VERIFY] flags
+        SCRIPT->>SUPABASE: Upload scripts to Storage
+        SCRIPT->>SUPABASE: Save script metadata + URLs
         SCRIPT-->>ORCH: Completed
         ORCH-->>API: Stage ready for review
         API-->>C: Notify: "Scripts ready for review"
@@ -326,14 +265,13 @@ sequenceDiagram
     rect rgb(240, 255, 245)
         Note over ORCH,MEDIA: Stage 4 — Media Production
         ORCH->>MEDIA: Run with approved scripts
-        MEDIA->>AI: Generate slide content + narration
-        MEDIA->>AI: Generate voice narration (TTS)
-        MEDIA->>STO: Upload slides (PPTX + PNG)
-        MEDIA->>STO: Upload narration (MP3)
-        MEDIA->>STO: Render video (FFmpeg → MP4)
-        MEDIA->>AI: Generate captions (Whisper → SRT)
-        MEDIA->>STO: Upload captions + thumbnail
-        MEDIA->>DB: Save media URLs
+        MEDIA->>GM: Generate slide content
+        MEDIA->>GM: "Generate voice narration (TTS)"
+        MEDIA->>SUPABASE: "Upload slides (PPTX + PNG)"
+        MEDIA->>SUPABASE: "Upload narration (MP3)"
+        MEDIA->>SUPABASE: "Render video (FFmpeg → MP4)"
+        MEDIA->>SUPABASE: Upload captions + thumbnail
+        MEDIA->>SUPABASE: Save media URLs
         MEDIA-->>ORCH: Completed
         ORCH-->>API: Stage ready for review
         API-->>C: Notify: "Media ready for review"
@@ -343,9 +281,9 @@ sequenceDiagram
     rect rgb(255, 250, 240)
         Note over ORCH,EVAL: Stage 5 — Assessments
         ORCH->>EVAL: Run with course data
-        EVAL->>AI: Generate quizzes + capstone brief
-        AI-->>EVAL: Quiz questions + capstone project
-        EVAL->>DB: Save quizzes
+        EVAL->>GM: Generate quizzes + capstone brief
+        GM-->>EVAL: Quiz questions + capstone project
+        EVAL->>SUPABASE: Save quizzes
         EVAL-->>ORCH: Completed
         ORCH-->>API: Stage ready for review
         API-->>C: Notify: "Quizzes ready for review"
@@ -355,9 +293,8 @@ sequenceDiagram
     rect rgb(245, 245, 255)
         Note over ORCH,LAUNCH: Stage 6 — Launch Preparation
         ORCH->>LAUNCH: Run with full course data
-        LAUNCH->>AI: Generate sales page + emails + social posts
-        AI-->>LAUNCH: Sales HTML + email sequence + social content
-        LAUNCH->>EXT: Stage content (not sent yet)
+        LAUNCH->>GM: Generate sales page + emails + social posts
+        GM-->>LAUNCH: Sales HTML + email sequence + social content
         LAUNCH-->>ORCH: Completed
         ORCH-->>API: Stage ready for final review
         API-->>C: Notify: "Course ready for final review"
@@ -366,15 +303,15 @@ sequenceDiagram
     C->>API: POST /courses/{id}/publish
     API->>EXT: Create Stripe product + price
     API->>EXT: Index course in Algolia
-    API->>DB: Update course status (published)
+    API->>SUPABASE: "Update course status (published)"
     API->>EXT: Send notification emails
     API-->>C: Return published course URL
 
     rect rgb(240, 240, 250)
         Note over OPTIMIZER: Post-Launch (Weekly)
-        OPTIMIZER->>DB: Analyze student engagement data
-        OPTIMIZER->>AI: Generate improvement report
-        OPTIMIZER->>DB: Save improvement report
+        OPTIMIZER->>SUPABASE: Analyze student engagement data
+        OPTIMIZER->>GM: Generate improvement report
+        OPTIMIZER->>SUPABASE: Save improvement report
         OPTIMIZER-->>API: Notify creator of new report
         API-->>C: "Weekly Optimizer report ready"
     end
@@ -657,33 +594,33 @@ erDiagram
 
 | Service | Technology | Deployment | Scaling |
 |---------|-----------|------------|---------|
-| REST API | FastAPI + Pydantic v2 | Cloud Run (2 vCPU, 2GB) | 1–100 instances |
-| Background Workers | RQ / BullMQ | Cloud Run (2 vCPU, 2GB) | 1–50 instances |
+| REST API | FastAPI + Pydantic v2 | Docker container (2 vCPU, 2GB) | Horizontal auto-scale |
+| Background Workers | RQ / BullMQ | Docker container (2 vCPU, 2GB) | Horizontal auto-scale |
 | Database ORM | SQLAlchemy 2.0 (async) | Supabase PostgreSQL 16 | Primary + Read Replica |
-| Migrations | Alembic | Cloud Build step | — |
-| Cache / Queue | Redis via Memorystore | 5GB Standard | Replicated |
+| Migrations | Alembic | GitHub Actions step | — |
+| Cache / Queue | Redis | 5GB Standard | Replicated |
+| Event Stream | Confluent Kafka (optional) | Managed cluster | Partition-based |
 
 ### AI & Machine Learning
 
 | Component | Provider | Model / Service |
 |-----------|----------|-----------------|
-| Text Generation | OpenAI | GPT-4o (primary), GPT-4o-mini (cost-optimized) |
-| Text Generation (Fallback) | Anthropic | Claude |
-| Embeddings | OpenAI | text-embedding-3-small (1536d) |
-| Speech-to-Text | OpenAI | Whisper API |
-| Text-to-Speech | OpenAI / ElevenLabs | TTS API / Voice Cloning |
-| Image Generation | OpenAI / Ideogram | DALL-E 3 |
+| Text Generation | Google | Gemini 3.5 Flash (primary, all agentic tasks) |
+| Embeddings | Google | Gemini Embedding 2 (1536d) via pgvector |
+| Speech-to-Text | Google | Gemini 3.5 Flash (multimodal) |
+| Text-to-Speech | Google / ElevenLabs | Gemini TTS / Voice Cloning |
 | Agent Orchestration | LangChain | LangGraph Supervisor |
-| Observability | Langfuse | Self-hosted on Cloud Run |
-| PII Detection | Microsoft Presidio | Self-hosted on Cloud Run |
+| AI Observability | Langfuse | Self-hosted |
+| PII Detection | Microsoft Presidio | Self-hosted |
 | Plagiarism | Originality.ai | API |
+| Video Rendering | FFmpeg | Background worker (no GPU needed) |
 
 ### Frontend & Mobile
 
 | Platform | Framework | State Management | Deployment |
 |----------|-----------|-----------------|------------|
-| Creator OS (Web) | Next.js 14+ (App Router) | Zustand + TanStack Query | Cloud Run |
-| LearnSpace (Web) | Next.js 14+ (App Router) | Zustand + TanStack Query | Cloud Run |
+| Creator OS (Web) | Next.js 14+ (App Router) | Zustand + TanStack Query | Docker container |
+| LearnSpace (Web) | Next.js 14+ (App Router) | Zustand + TanStack Query | Docker container |
 | Mobile App | React Native + Expo SDK 52+ | Zustand + TanStack Query | EAS Build → App Store/Play |
 
 ### Third-Party Integrations
@@ -696,17 +633,30 @@ erDiagram
 | Algolia | Course search indexing | — |
 | PostHog | Product analytics, feature flags | — |
 
-### GCP Infrastructure
+### Data Layer (Supabase — Unified)
 
-| Component | Configuration |
+| Component | Implementation | Configuration |
+|-----------|---------------|---------------|
+| Relational DB | PostgreSQL 16 | Primary + Read Replica, PgBouncer pooling |
+| Vector DB | pgvector extension | 1536d embeddings, hybrid search (0.65 vector + 0.35 BM25) |
+| Object Storage | Supabase Storage | Media files, certificates, scripts, slides |
+| Authentication | Supabase Auth | JWT, magic link, Google/GitHub OAuth, email+password |
+
+### Observability
+
+| Component | Implementation |
 |-----------|---------------|
-| Compute | Cloud Run (auto-scale, CPU > 65%) |
-| Video Rendering | Cloud Batch (preemptible VMs, 50 parallel) |
-| Storage | Cloud Storage (multi-region, versioned) |
-| CDN | Cloud CDN (edge caching, signed URLs) |
-| Networking | Custom VPC, Serverless VPC Connector |
-| Security | Cloud Armor (OWASP, rate limiting) |
-| Secrets | Secret Manager (auto-rotation) |
-| Monitoring | Cloud Logging + Monitoring + Trace |
-| CI/CD | Cloud Build → Artifact Registry → Cloud Run |
+| Metrics | Prometheus (exporters on all services) |
+| Dashboards | Grafana (API latency, error rates, queue depths, AI cost per course) |
+| Logging | Structured JSON stdout → log collector |
+| Alerting | Grafana Alerting (Slack/PagerDuty) |
+| AI Observability | Langfuse (per-agent cost, latency, quality tracing) |
+
+### CI/CD
+
+| Pipeline | Implementation |
+|----------|---------------|
+| CI | GitHub Actions (lint → type check → test → build) |
+| CD | GitHub Actions (deploy dev on PR merge, main with manual approval) |
+| Container Registry | Docker Hub / GitHub Container Registry |
 | IaC | Terraform (workspaces: dev, staging, prod) |

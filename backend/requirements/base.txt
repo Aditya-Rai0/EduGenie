@@ -15,10 +15,9 @@ sendgrid
 twilio
 stripe
 algoliasearch
-openai
+google-generativeai
 langgraph
 langchain
 langfuse
 python-pptx
-google-cloud-storage
-google-cloud-logging
+supabase

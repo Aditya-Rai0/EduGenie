@@ -181,8 +181,7 @@ The `OrchestratorAgent` registers agents by name and executes them in sequence, 
 
 | Integration | File | Purpose |
 |-------------|------|---------|
-| **OpenAI** | `app/integrations/openai.py` | GPT-4o text generation, embeddings, TTS |
-| **LangChain** | `app/integrations/langchain.py` | LangChain LLM wrapper for agent toolchains |
+| **Gemini** | `app/integrations/gemini.py` | Gemini 3.5 Flash text generation, TTS, STT, embeddings |
 | **Stripe** | `app/integrations/stripe.py` | Payments, subscriptions, Connect payouts |
 | **SendGrid** | `app/integrations/sendgrid.py` | Transactional emails |
 | **Twilio** | `app/integrations/twilio.py` | WhatsApp notifications |
@@ -194,8 +193,8 @@ The `OrchestratorAgent` registers agents by name and executes them in sequence, 
 
 All configuration is managed via Pydantic Settings in `app/config.py`. Environment variables are loaded from `.env` in the project root. Key settings groups:
 
-- **`SUPABASE_*`** — Database connection and auth
-- **`OPENAI_*`** — AI model access
+- **`SUPABASE_*`** — Database, Storage, and Auth
+- **`GEMINI_API_KEY`** — AI model access (Gemini 3.5 Flash)
 - **`STRIPE_*`** — Payment processing
 - **`REDIS_URL`** — Queue and cache backend
 - **`DATABASE_URL`** — PostgreSQL async connection string

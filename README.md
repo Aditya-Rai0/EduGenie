@@ -35,15 +35,14 @@ edugenie/
 | Layer | Technology |
 |-------|-----------|
 | **API** | FastAPI + Pydantic v2 (Python 3.12) |
-| **AI / Agents** | LangChain, LangGraph, OpenAI GPT-4o |
-| **Database** | PostgreSQL 16 + pgvector (Supabase) |
+| **AI / Agents** | LangGraph, Gemini 3.5 Flash |
+| **Database + Storage + Auth** | Supabase (PostgreSQL 16 + pgvector + Storage + Auth) |
 | **ORM** | SQLAlchemy 2.0 (async) + Alembic |
-| **Auth** | Supabase Auth (JWT, magic link, OAuth) |
 | **Queue** | Redis + RQ |
 | **Web Frontend** | Next.js 14+ (App Router), TypeScript, Tailwind CSS |
 | **Mobile** | React Native + Expo SDK 52+ |
-| **Infrastructure** | GCP (Cloud Run, Cloud Storage, Cloud SQL) |
-| **CI/CD** | Cloud Build, Artifact Registry, Cloud Deploy |
+| **Hosting** | Docker (any Docker-compatible platform) |
+| **CI/CD** | GitHub Actions |
 | **IaC** | Terraform |
 | **Payments** | Stripe (Checkout, Connect, Tax) |
 | **Email** | SendGrid |

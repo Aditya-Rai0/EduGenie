@@ -17,41 +17,41 @@ EduGenie OS is an AI-powered Course Creation & Launch Platform. It takes a topic
 │                  USERS                        │
 │  Creator OS (Next.js)  │  LearnSpace (Next.js) │
 │  Mobile App (React Native + Expo)           │
-└──────────────┬───────────────────────────────┘
-               │ HTTPS / WSS
-┌──────────────▼───────────────────────────────┐
-│     GCP Cloud Load Balancer + Cloud Armor     │
-│     (TLS 1.3, WAF, Rate Limiting, Routing)    │
-└──────────────┬───────────────────────────────┘
-               │
-    ┌──────────┼──────────────────┐
-    ▼          ▼                   ▼
-┌─────────┐ ┌──────────────┐ ┌────────────────┐
-│ Next.js │ │ FastAPI      │ │ Redis + BullMQ  │
-│ (Cloud  │ │ Backend      │ │ Job Queue       │
-│  Run)   │ │ (Cloud Run)  │ │ (Memorystore)   │
-└─────────┘ └──────┬───────┘ └────────────────┘
-                   │
-         ┌─────────┴──────────┐
-         ▼                     ▼
-   ┌─────────────┐    ┌────────────────┐
-   │  Services   │    │  AI Agent Layer │
-   │ - Courses   │    │  Intelligence   │
-   │ - Creator   │    │  Architect      │
-   │ - Student   │    │  Scriptwriter   │
-   │ - Commerce  │    │  MediaForge     │
-   └─────────────┘    │  Evaluator      │
-                      │  Launchpad      │
-                      │  Optimizer      │
-                      └───────┬─────────┘
-                              │
-    ┌─────────────────────────┼──────────────┐
-    ▼            ▼            ▼              ▼
-┌────────┐ ┌───────────┐ ┌──────────┐ ┌──────────┐
-│Cloud   │ │ Cloud SQL │ │ Vertex AI│ │ Cloud    │
-│Storage │ │(Supabase) │ │ + OpenAI │ │ Batch    │
-│(Media) │ │ + pgvector│ │  API     │ │(FFmpeg)  │
-└────────┘ └───────────┘ └──────────┘ └──────────┘
+└──────────────────────┬───────────────────────┘
+                       │ HTTPS / WSS
+┌──────────────────────▼───────────────────────┐
+│           Compute Layer (Docker)              │
+│  ┌─────────┐  ┌──────────────┐  ┌──────────┐ │
+│  │ Next.js │  │ FastAPI      │  │ Redis +  │ │
+│  │ Frontend│  │ Backend      │  │ BullMQ   │ │
+│  └─────────┘  └──────┬───────┘  └──────────┘ │
+└──────────────────────┼────────────────────────┘
+                       │
+         ┌─────────────┴─────────────┐
+         ▼                           ▼
+   ┌─────────────┐          ┌──────────────────┐
+   │  Services   │          │  AI Agent Layer   │
+   │ - Courses   │          │  Intelligence     │
+   │ - Creator   │          │  Architect        │
+   │ - Student   │          │  Scriptwriter     │
+   │ - Commerce  │          │  MediaForge       │
+   └─────────────┘          │  Evaluator        │
+                            │  Launchpad        │
+                            │  Optimizer        │
+                            └────────┬─────────┘
+                                     │
+             ┌───────────────────────┼──────────────────┐
+             ▼                       ▼                  ▼
+┌─────────────────────┐  ┌──────────────────┐  ┌──────────────┐
+│  Supabase (Unified) │  │  Gemini 3.5 Flash │  │ FFmpeg       │
+│  ┌───────────────┐  │  │  (Text + Embed +   │  │ (Video       │
+│  │ PostgreSQL 16 │  │  │   TTS + STT)      │  │  Rendering)  │
+│  │ + pgvector    │  │  └──────────────────┘  └──────────────┘
+│  │ Supabase Auth │  │
+│  │ Supabase      │  │
+│  │  Storage      │  │
+│  └───────────────┘  │
+└─────────────────────┘
 ```
 
 ### Data Flow — Course Build (End-to-End)
@@ -63,12 +63,12 @@ Intelligence Agent → web search + competitor scrape → market report
   ↓ [REVIEW GATE: creator approves topic angle]
 Architect Agent → curriculum JSON (modules, lessons, objectives, durations)
   ↓ [REVIEW GATE: creator reorders / approves outline]
-Scriptwriter Agent → parallel script writing → lesson scripts (Cloud Storage)
+Scriptwriter Agent → parallel script writing → lesson scripts (Supabase Storage)
   ↓
 MediaForge Agent → parallel per module:
-  Slide Agent  → slide JSON → python-pptx render → PPTX + PNG frames (Cloud Storage)
-  Voice Agent  → OpenAI TTS / ElevenLabs → MP3 narration (Cloud Storage, cached by hash)
-  Video Agent  → FFmpeg (PNG frames + MP3) → 1080p MP4 + Whisper SRT (Cloud Storage)
+  Slide Agent  → slide JSON → python-pptx render → PPTX + PNG frames (Supabase Storage)
+  Voice Agent  → Gemini TTS / ElevenLabs → MP3 narration (Supabase Storage, cached by hash)
+  Video Agent  → FFmpeg (PNG frames + MP3) → 1080p MP4 + Whisper SRT (Supabase Storage)
   ↓
 Evaluator Agent → quiz JSON + capstone brief + flashcards
   ↓
@@ -110,31 +110,28 @@ Optimizer Agent → student analytics → improvement report → creator action 
 
 ### Database & Storage
 - **Primary DB:** Supabase (PostgreSQL 16 + pgvector extension)
-- **Cache/Queue:** Redis via GCP Memorystore
-- **Object Storage:** GCP Cloud Storage (media files, certificates, slides)
-- **Content Delivery:** GCP Cloud CDN (signed URLs for private content)
+- **Object Storage:** Supabase Storage (media files, certificates, slides, scripts)
+- **Auth:** Supabase Auth (JWT, magic link, Google/GitHub OAuth, email+password)
+- **Cache/Queue:** Redis (sessions, rate limiting, job queue, pipeline checkpoint state)
 - **Search Index:** Algolia (marketplace course search)
 
 ### AI & Machine Learning
-- **Text Generation:** OpenAI GPT-4o / GPT-4o-mini (primary), Anthropic Claude (fallback)
-- **Embeddings:** OpenAI text-embedding-3-small (1536d) via pgvector
-- **Speech-to-Text:** OpenAI Whisper API
-- **Text-to-Speech:** OpenAI TTS API + ElevenLabs API (voice cloning)
-- **Speech-to-Speech:** Pipeline: Whisper STT → GPT-4o → OpenAI TTS
-- **Image Generation:** OpenAI DALL-E 3 + Ideogram API
-- **Video Rendering:** FFmpeg on GCP Cloud Batch
+- **Text Generation:** Google Gemini 3.5 Flash (primary for all agentic tasks)
+- **Embeddings:** Google Gemini Embedding 2 (1536d) via pgvector
+- **Speech-to-Text:** Google Gemini 3.5 Flash (multimodal)
+- **Text-to-Speech:** Google Gemini TTS API + ElevenLabs API (voice cloning)
+- **Video Rendering:** FFmpeg (background worker, no GPU needed)
 - **Plagiarism Check:** Originality.ai
-- **PII Detection:** Microsoft Presidio (self-hosted on Cloud Run)
-- **AI Observability:** Langfuse (self-hosted on Cloud Run or Cloud-hosted)
+- **PII Detection:** Microsoft Presidio (self-hosted)
+- **AI Observability:** Langfuse (self-hosted or cloud-hosted)
 
-### GCP Cloud Infrastructure
-- **Compute:** Cloud Run (backend APIs, web frontend, workers)
-- **Batch Processing:** Cloud Batch (FFmpeg video rendering, parallel jobs)
-- **Networking:** VPC, Cloud Load Balancer, Cloud CDN, Cloud Armor WAF
-- **CI/CD:** Cloud Build + Artifact Registry + Cloud Deploy
-- **Monitoring:** Cloud Logging, Cloud Monitoring, Error Reporting, Cloud Trace
-- **Secrets:** Secret Manager
-- **IAM:** Service accounts with least-privilege roles
+### Infrastructure (Container-Based)
+- **Compute:** Docker containers (backend APIs, web frontend, workers) hosted on any Docker-compatible platform
+- **Video Rendering:** Background worker with FFmpeg (no GPU needed)
+- **CI/CD:** GitHub Actions (lint → type check → test → build → deploy)
+- **Monitoring:** Prometheus (metrics) + Grafana (dashboards, alerting)
+- **Container Registry:** Docker Hub / GitHub Container Registry
+- **Secrets:** Environment variables / secret store per platform
 
 ### Third-Party APIs
 - **Email:** SendGrid (transactional emails, launch sequences, notifications)
@@ -146,57 +143,47 @@ Optimizer Agent → student analytics → improvement report → creator action 
 
 ---
 
-## GCP INFRASTRUCTURE ARCHITECTURE
+## INFRASTRUCTURE ARCHITECTURE
 
 ### Compute Layer
-- **Cloud Run (Primary):** FastAPI backend, Next.js web frontend, BullMQ workers, AI agent services
-  - Auto-scale on CPU > 65%, min 1 instance, max 100
-  - Request-based CPU allocation for API, always-on CPU for workers
+- **Docker Containers:** FastAPI backend, Next.js web frontend, BullMQ workers, AI agent services
+  - Horizontal auto-scaling based on CPU/memory
   - 2 GB RAM / 2 vCPU per instance (scale with need)
-- **Cloud Batch:** FFmpeg video rendering jobs (elastic, no fixed capacity)
-  - Preemptible VMs for cost savings on render jobs
+- **Video Rendering:** Background worker with FFmpeg (no GPU needed)
   - Up to 50 parallel renders
 
-### Storage Layer
-- **Cloud Storage (Media):**
-  - Multi-region bucket for video, slides, audio, certificates
-  - Object versioning enabled
+### Storage Layer (Supabase Unified)
+- **Supabase Storage (Media):**
+  - Buckets for video, slides, audio, certificates
   - Signed URLs with 1-hour expiry for video streaming
-  - Lifecycle: archive to Nearline after 90 days, Coldline after 365 days
-- **Cloud SQL / Supabase:**
-  - Supabase PostgreSQL 16 with 1 primary + 1 read replica
+  - Lifecycle policies configurable per bucket
+- **Supabase PostgreSQL 16:**
+  - 1 primary + 1 read replica
   - PgBouncer connection pooling
   - Automated backups (hourly), RPO < 1hr, RTO < 3hrs
-- **Memorystore for Redis:**
+  - pgvector extension for 1536d embeddings
+- **Redis:**
   - Cache, sessions, rate limiting, job queue, pipeline checkpoint state
   - 5GB Standard tier (MVP), scale as needed
 
-### Networking
-- **VPC:** Custom VPC with private subnet for Cloud Run, Cloud SQL, Memorystore
-- **Serverless VPC Connector:** Bridge Cloud Run to VPC resources
-- **Cloud Load Balancer:** External HTTPS for frontend, internal for services
-- **Cloud CDN:** Static assets, course media caching
-- **Cloud Armor:** WAF rules, DDoS protection, IP allow/deny lists, rate limiting
-
-### CI/CD Pipeline (Cloud Build)
-- **Trigger:** Cloud Build triggers on push to `develop`/`main` branches
+### CI/CD Pipeline (GitHub Actions)
+- **Trigger:** PR to `development` branch / push to `main` branch
 - **Stages:**
-  1. Lint (ruff + black for Python, ESLint + Prettier for TS)
+  1. Lint (ruff for Python, ESLint + Prettier for TS)
   2. Type check (mypy for Python, tsc for TypeScript)
   3. Unit tests (pytest, Jest)
   4. Security scan (Snyk / Trivy)
-  5. Docker build → Artifact Registry
+  5. Docker build → Container Registry
   6. Integration tests
-  7. Deploy to Cloud Run (staging auto, production manual promotion gate)
-- **Deployment:** Blue/green via Cloud Run revision traffic splitting
-- **Post-deploy:** Smoke tests → 100% traffic shift → 1hr monitoring standby
+  7. Deploy (dev auto on PR merge, main with manual approval gate)
+- **Deployment:** Rolling update strategy
+- **Post-deploy:** Smoke tests → 1hr monitoring standby
 
 ### Monitoring & Observability
-- **Cloud Logging:** Structured JSON logging from all services
-- **Cloud Monitoring:** Dashboards for API latency, error rates, queue depths, AI cost per course
-- **Cloud Trace:** Distributed tracing across FastAPI + AI agent calls
-- **Error Reporting:** Real-time exception aggregation
-- **Alerts:** PagerDuty / Slack integration via Cloud Monitoring alerts
+- **Prometheus:** Metrics collection from all services (API latency, error rates, queue depths, AI cost per course)
+- **Grafana:** Dashboards for business and infrastructure metrics
+- **Structured JSON Logging:** stdout from all services → log collector
+- **Grafana Alerting:** Slack / PagerDuty integration
   - API error rate > 1% for 5 min
   - CPU > 85% sustained
   - Pipeline failure rate > 4% in 24h
@@ -204,16 +191,15 @@ Optimizer Agent → student analytics → improvement report → creator action 
   - Video render queue depth > 200
 
 ### Security
-- **Secret Manager:** All API keys, database URLs, JWT secrets (auto-rotation)
-- **IAM:** Service accounts per service with minimal roles
-- **VPC Firewall:** Ingress restricted to Load Balancer, egress to specific APIs
-- **Cloud Armor:** OWASP Top 10 rules, rate limiting (200 req/min standard, 2000 enterprise)
+- **Secrets:** Environment variables / secret store per platform
+- **Container Security:** Regular image scanning
+- **API Security:** JWT validation, rate limiting (200 req/min standard, 2000 enterprise)
+- **CORS:** Whitelist of allowed origins (edugenie.io, *.edugenie.io)
 
 ### IaC
-- **Terraform** for all GCP infrastructure
+- **Terraform** for all infrastructure provisioning
 - Directory: `infra/terraform/`
 - Separate state files per environment (dev, staging, prod)
-- Modules: compute, network, storage, monitoring, cicd
 
 ---
 
@@ -999,7 +985,6 @@ Roles: admin | creator | student | enterprise_admin | affiliate
 - Node.js 20+ (nvm or fnm)
 - Docker Desktop (for local Supabase + Redis)
 - Expo CLI (`npm install -g expo-cli`)
-- GCP Cloud SDK (gcloud CLI)
 
 # Clone and setup
 git clone <repo-url> && cd edugenie
@@ -1029,24 +1014,16 @@ docker compose up -d  # Local Supabase + Redis
 
 ### Environment Variables
 ```bash
-# .env.local (all stored in GCP Secret Manager in production)
+# .env.local (all stored securely per platform)
 ENVIRONMENT=development
 
 # Supabase
 SUPABASE_URL=https://xxx.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=eyJ...
+SUPABASE_ANON_KEY=eyJ...
 
-# GCP
-GCP_PROJECT_ID=edugenie-prod
-GCP_REGION=us-central1
-GCP_STORAGE_BUCKET=edugenie-media
-
-# OpenAI
-OPENAI_API_KEY=sk-...
-OPENAI_ORG_ID=org-...
-
-# ElevenLabs
-ELEVENLABS_API_KEY=...
+# Gemini
+GEMINI_API_KEY=AIza...
 
 # Stripe
 STRIPE_SECRET_KEY=sk_live_...
@@ -1066,12 +1043,26 @@ ALGOLIA_APP_ID=...
 ALGOLIA_API_KEY=...
 ALGOLIA_INDEX_NAME=edugenie_courses
 
+# ElevenLabs (voice cloning, optional)
+ELEVENLABS_API_KEY=...
+
 # PostHog
 POSTHOG_API_KEY=phc_...
 
-# Langfuse
+# Langfuse (AI observability, optional)
 LANGFUSE_PUBLIC_KEY=...
 LANGFUSE_SECRET_KEY=...
+
+# Redis
+REDIS_URL=redis://localhost:6379/0
+
+# Database
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/edugenie
+
+# Confluent Kafka (optional)
+KAFKA_BOOTSTRAP_SERVERS=...
+KAFKA_API_KEY=...
+KAFKA_API_SECRET=...
 ```
 
 ### Testing Strategy
@@ -1110,91 +1101,22 @@ LANGFUSE_SECRET_KEY=...
 
 ## CI/CD PIPELINE
 
-### Cloud Build Configuration
-```yaml
-# cloudbuild.yaml
-steps:
-  # Backend
-  - name: 'python:3.12'
-    id: 'backend-lint'
-    entrypoint: 'bash'
-    args: ['-c', 'pip install ruff mypy && ruff check backend/ && mypy backend/']
-  - name: 'python:3.12'
-    id: 'backend-test'
-    entrypoint: 'bash'
-    args: ['-c', 'pip install -r backend/requirements/dev.txt && pytest backend/tests/unit/']
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'backend-build'
-    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/edugenie/backend:$SHORT_SHA', '-f', 'backend/Dockerfile', 'backend/']
-    waitFor: ['backend-test']
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'backend-push'
-    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/edugenie/backend:$SHORT_SHA']
-    waitFor: ['backend-build']
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: 'backend-deploy'
-    entrypoint: 'gcloud'
-    args:
-      - 'run'
-      - 'deploy'
-      - 'edugenie-backend'
-      - '--image=us-central1-docker.pkg.dev/$PROJECT_ID/edugenie/backend:$SHORT_SHA'
-      - '--region=us-central1'
-      - '--platform=managed'
-      - '--allow-unauthenticated'
-      - '--memory=2Gi'
-      - '--cpu=2'
-      - '--min-instances=1'
-      - '--max-instances=100'
-      - '--concurrency=80'
-      - '--set-secrets=OPENAI_API_KEY=openai-api-key:latest,...'
-    waitFor: ['backend-push']
+### GitHub Actions Configuration
 
-  # Frontend Web
-  - name: 'node:20'
-    id: 'frontend-lint'
-    entrypoint: 'bash'
-    args: ['-c', 'cd frontend-web && npm ci && npm run lint']
-  - name: 'node:20'
-    id: 'frontend-build'
-    entrypoint: 'bash'
-    args: ['-c', 'cd frontend-web && npm ci && npm run build']
-    waitFor: ['frontend-lint']
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'frontend-image'
-    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/edugenie/frontend:$SHORT_SHA', '-f', 'frontend-web/Dockerfile', 'frontend-web/']
-    waitFor: ['frontend-build']
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'frontend-push'
-    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/edugenie/frontend:$SHORT_SHA']
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: 'frontend-deploy'
-    entrypoint: 'gcloud'
-    args:
-      - 'run'
-      - 'deploy'
-      - 'edugenie-frontend'
-      - '--image=us-central1-docker.pkg.dev/$PROJECT_ID/edugenie/frontend:$SHORT_SHA'
-      - '--region=us-central1'
-      - '--platform=managed'
-      - '--allow-unauthenticated'
-    waitFor: ['frontend-push']
+The CI/CD pipeline is defined in `.github/workflows/main.yml`. Two workflows handle dev and main branches:
 
-  # Migrations
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: 'db-migrate'
-    entrypoint: 'bash'
-    args: ['-c', 'alembic upgrade head']
-    env: ['SUPABASE_URL=$_SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY=$_SUPABASE_SERVICE_ROLE_KEY']
-    waitFor: ['backend-test']
+**Workflow triggers:**
+- **Pull request to `development` branch** → runs lint, type check, unit tests, build
+- **Push to `main` branch** → runs full pipeline + deployment (manual approval gate)
 
-timeout: 1800s
-substitutions:
-  _SUPABASE_URL: ''
-  _SUPABASE_SERVICE_ROLE_KEY: ''
-options:
-  machineType: 'E2_HIGHCPU_8'
-```
+**Pipeline stages:**
+1. Lint (ruff for Python, ESLint + Prettier for TypeScript)
+2. Type check (mypy for Python, tsc for TypeScript)
+3. Unit tests (pytest for Python, Jest for TypeScript)
+4. Security scan (Snyk / Trivy)
+5. Docker build → Container Registry
+6. Integration tests
+7. Deploy (dev: auto on PR merge; main: manual approval)
 
 ### EAS Build for Mobile
 ```bash
@@ -1214,103 +1136,66 @@ eas submit --platform android --profile production
 
 ## DEPLOYMENT GUIDE
 
-### 1. GCP Project Setup
-```bash
-gcloud projects create edugenie-prod --name="EduGenie Production"
-gcloud config set project edugenie-prod
+### 1. Platform Setup
+- Choose a Docker-compatible hosting platform (Render, Railway, Fly.io, or self-hosted VPS)
+- Set up Supabase project (PostgreSQL 16 + pgvector + Storage + Auth)
+- Configure Redis instance (Upstash, Redis Labs, or self-hosted)
 
-# Enable APIs
-gcloud services enable \
-  run.googleapis.com \
-  cloudbuild.googleapis.com \
-  storage.googleapis.com \
-  cloudcdn.googleapis.com \
-  compute.googleapis.com \
-  secretmanager.googleapis.com \
-  cloudresourcemanager.googleapis.com \
-  iam.googleapis.com \
-  logging.googleapis.com \
-  monitoring.googleapis.com \
-  cloudbatch.googleapis.com
-```
-
-### 2. Service Accounts & IAM
-```bash
-# Backend service account
-gcloud iam service-accounts create edugenie-backend \
-  --display-name="EduGenie Backend SA"
-
-# Grant permissions
-gcloud projects add-iam-policy-binding edugenie-prod \
-  --member="serviceAccount:edugenie-backend@edugenie-prod.iam.gserviceaccount.com" \
-  --role="roles/run.invoker"
-gcloud projects add-iam-policy-binding edugenie-prod \
-  --member="serviceAccount:edugenie-backend@edugenie-prod.iam.gserviceaccount.com" \
-  --role="roles/storage.objectAdmin"
-gcloud projects add-iam-policy-binding edugenie-prod \
-  --member="serviceAccount:edugenie-backend@edugenie-prod.iam.gserviceaccount.com" \
-  --role="roles/secretmanager.secretAccessor"
-```
-
-### 3. Infrastructure Provisioning
+### 2. Infrastructure Provisioning
 ```bash
 cd infra/terraform
-terraform init -backend-config="bucket=edugenie-tfstate"
+terraform init
 terraform workspace new staging
 terraform apply -var-file="environments/staging.tfvars"
 ```
 
-### 4. Secrets Management
+### 3. Secrets Management
 ```bash
-# Store all secrets in Secret Manager
-echo -n "sk-proj-..." | gcloud secrets create openai-api-key --data-file=-
-echo -n "SG.xxxxx" | gcloud secrets create sendgrid-api-key --data-file=-
-echo -n "ACxxxxx:xxxxx" | gcloud secrets create twilio-auth --data-file=-
-echo -n "sk_live_..." | gcloud secrets create stripe-secret-key --data-file=-
-echo -n "whsec_..." | gcloud secrets create stripe-webhook-secret --data-file=-
+# Store secrets in your platform's secret store or .env
+# Required secrets:
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+SUPABASE_ANON_KEY=
+GEMINI_API_KEY=
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+STRIPE_CONNECT_CLIENT_ID=
+SENDGRID_API_KEY=
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_WHATSAPP_NUMBER=
+ALGOLIA_APP_ID=
+ALGOLIA_API_KEY=
 ```
 
-### 5. Custom Domain Setup
-```bash
-# Verify domain ownership
-gcloud domains verify edugenie.io
-
-# Create external HTTPS load balancer with Cloud CDN
-# Configure Cloud DNS with DNSSEC
-gcloud dns managed-zones create edugenie-zone --dns-name="edugenie.io." --visibility=public
-gcloud dns record-sets create api.edugenie.io --zone=edugenie-zone --type=A --ttl=300 \
-  --rrdatas="$(gcloud compute addresses describe edugenie-lb-ip --global --format='value(address)')"
-```
-
-### 6. SSL/TLS
-- Cloud Load Balancer: Managed SSL certificate (Let's Encrypt via Google Trust Services)
-- Automatic renewal
-- TLS 1.3 enforced, HSTS header
+### 4. Custom Domain & SSL
+- Configure DNS A/CNAME records pointing to your hosting provider
+- SSL/TLS is handled automatically by the hosting platform
+- TLS 1.3 enforced, HSTS header recommended
 
 ---
 
 ## MONITORING & OPERATIONS
 
-### Cloud Logging Setup
+### Prometheus Metrics Export (example)
 ```python
 # backend/app/main.py
-import google.cloud.logging
-from google.cloud.logging.handlers import CloudLoggingHandler
+from prometheus_client import Counter, Histogram, start_http_server
+import time
 
-client = google.cloud.logging.Client()
-handler = CloudLoggingHandler(client, name="edugenie-backend")
-root_logger = logging.getLogger()
-root_logger.addHandler(handler)
-root_logger.setLevel(logging.INFO)
+REQUEST_COUNT = Counter("api_requests_total", "Total API requests", ["method", "endpoint", "status"])
+REQUEST_LATENCY = Histogram("api_request_duration_seconds", "API request latency", ["method", "endpoint"])
+AI_COST = Counter("ai_cost_usd_total", "Total AI cost in USD", ["agent", "model"])
+PIPELINE_FAILURES = Counter("pipeline_failures_total", "Pipeline stage failures", ["stage"])
 ```
 
-### Cloud Monitoring Dashboards
+### Grafana Dashboards
 - **API Performance:** Latency p50/p95/p99 per endpoint, error rate, throughput
 - **AI Pipeline:** Per-stage latency, cost per build, model usage breakdown
 - **Business:** Active creators, course builds, enrollments, revenue, completion rate
-- **Infrastructure:** Cloud Run CPU/memory, Redis memory, Storage metrics
+- **Infrastructure:** CPU/memory per container, Redis memory, Storage metrics
 
-### Alerting Rules (Cloud Monitoring)
+### Alerting Rules (Grafana)
 | Alert | Condition | Notification |
 |-------|-----------|-------------|
 | API Error Rate | > 1% for 5 min | PagerDuty (critical) |
@@ -1413,7 +1298,7 @@ root_logger.setLevel(logging.INFO)
 - Marketplace with Algolia search + AI recommendations
 - Affiliate system with Stripe Connect payouts
 - Analytics dashboard (real-time + weekly AI narrative)
-- Multi-language (6 languages via OpenAI + ElevenLabs)
+- Multi-language (6 languages via Gemini + ElevenLabs)
 - White-label storefront (beta)
 - Promo code engine
 - Course version management
@@ -1456,7 +1341,7 @@ root_logger.setLevel(logging.INFO)
 - **API Documentation:** OpenAPI/Swagger auto-generated at `/docs` (FastAPI built-in)
 - **Architecture Decision Records:** `docs/adr/` — key technical decisions with rationale
 - **Developer Onboarding:** `docs/development.md` — setup, conventions, workflow
-- **Deployment Guide:** `docs/deployment.md` — GCP provisioning, CI/CD, rollback
+- **Deployment Guide:** `docs/deployment.md` — provisioning, CI/CD, rollback
 - **API Integration Guide:** For third-party developers consuming the public API
 
 ---
@@ -1483,12 +1368,12 @@ root_logger.setLevel(logging.INFO)
 
 | Service | Estimated Monthly Cost |
 |---------|----------------------|
-| Cloud Run (backend + workers) | ~$80 |
-| Cloud Storage + CDN (media) | ~$40 |
-| Memorystore (Redis) | ~$25 |
-| Cloud Batch (FFmpeg) | ~$20 |
+| Hosting (compute) | ~$80 |
+| Storage + CDN | ~$40 |
+| Redis | ~$25 |
+| FFmpeg rendering | ~$20 |
 | Supabase (Pro) | ~$25 |
-| OpenAI API (AI pipeline) | ~$500 (variable) |
+| Gemini API (AI pipeline) | ~$500 (variable) |
 | ElevenLabs API (voice) | ~$100 |
 | SendGrid (email) | ~$15 |
 | Twilio (WhatsApp) | ~$10 |
@@ -1521,14 +1406,9 @@ cd mobile-app && npx jest
 
 # Infrastructure
 cd infra/terraform && terraform plan -var-file="environments/staging.tfvars"
-cd infra && gcloud builds submit --config cloudbuild.yaml
-
-# GCP
-gcloud run services list
-gcloud secrets list
-gcloud logging read "resource.type=cloud_run_revision AND severity>=ERROR" --limit=50
+cd infra && docker compose up -d
 ```
 
 ---
 
-*Generated from PRD v1.0 — EduGenie OS. This CLAUDE.md serves as the authoritative specification for Claude Code CLI autonomous development. All AWS references from original PRD have been replaced with GCP equivalents. Third-party integrations (SendGrid, Twilio, Stripe) remain consistent with documented PRD feature workflows.*
+*Generated from PRD v1.0 — EduGenie OS. This CLAUDE.md serves as the authoritative specification for code generation. Stack: FastAPI · Next.js · Expo · LangGraph · Gemini 3.5 Flash · Supabase. Third-party integrations (SendGrid, Twilio, Stripe) remain consistent with documented PRD feature workflows.*
