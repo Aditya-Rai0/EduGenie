@@ -18,10 +18,10 @@ Tracks project context, decisions, architecture references, session state, and h
 | Backend | Python 3.12, FastAPI, Pydantic v2, SQLAlchemy 2.0 async |
 | Frontend Web | Next.js 14+ (App Router), TypeScript strict, Tailwind CSS, Radix UI |
 | Mobile | React Native + Expo SDK 52+, React Navigation |
-| Database | Supabase (PostgreSQL 16 + pgvector), Redis/Memorystore |
-| Storage | GCP Cloud Storage + Cloud CDN |
+| Database | Supabase (PostgreSQL 16 + pgvector), Redis |
+| Storage | Supabase Storage |
 | Auth | Supabase Auth (magic link, OAuth, JWT) |
-| AI | OpenAI API (GPT-4o, GPT-4o-mini, Whisper, TTS, embeddings) |
+| AI | Gemini 3.5 Flash (Text, Embed, TTS, STT) |
 | Agent Framework | LangGraph supervisor pattern (7 agents) |
 | Payments | Stripe (Checkout, Connect, Tax, Billing Portal) |
 | Email | SendGrid |
@@ -29,19 +29,19 @@ Tracks project context, decisions, architecture references, session state, and h
 | Search | Algolia |
 | Analytics | PostHog |
 | AI Observability | Langfuse |
-| Infrastructure | GCP (Cloud Run, Cloud Build, Memorystore, Cloud Batch, Secret Manager) |
+| Infrastructure | Docker containers (any hosting platform) |
 | IaC | Terraform |
-| CI/CD | Cloud Build -> Artifact Registry -> Cloud Run |
-| Monitoring | Cloud Logging, Cloud Monitoring, Cloud Trace, Error Reporting |
+| CI/CD | GitHub Actions (lint → type check → test → build → deploy) |
+| Monitoring | Prometheus + Grafana |
 
 ## Architecture Decisions
 
 | ID | Decision | Rationale | Date |
 |----|----------|-----------|------|
-| ADR-001 | GCP over AWS | User requirement; all original PRD AWS references replaced with GCP equivalents | Session 1 |
+| ADR-001 | Docker containers over cloud-specific infra | User requirement; provider-agnostic container-based deployment | Session 1 |
 | ADR-002 | Supabase over Cloud SQL | User requirement; PostgreSQL 16 + pgvector + auth out of box | Session 1 |
 | ADR-003 | LangGraph over custom agent framework | Mature supervisor pattern, state checkpointing, parallel execution | Session 1 |
-| ADR-004 | OpenAI primary, Claude fallback | GPT-4o best quality/cost for course content; Claude for safety-critical fallback | Session 1 |
+| ADR-004 | Gemini 3.5 Flash primary | Gemini 3.5 Flash best quality/cost for course content; ElevenLabs for voice | Session 1 |
 | ADR-005 | SendGrid over Resend | Used in original PRD reference architecture; proven at scale | Session 1 |
 | ADR-006 | Modular specs/ directory | CLAUDE.md became unwieldy; split into 7 focused files for maintainability | Session 1 |
 
@@ -58,10 +58,10 @@ C:\Users\dilsa\Desktop\Edugenio\
 │   ├── stack.md         — Architecture, stack, features, directory, metrics
 │   ├── api-design.md    — REST endpoints, WebSocket, auth, RBAC, rate limits
 │   ├── database.md      — 19 core tables, pgvector, migrations, compliance
-│   ├── gcp-infrastructure.md — Cloud Run, Storage, Batch, IAM, monitoring
-│   ├── integrations.md  — SendGrid, Twilio, Stripe, OpenAI setup + code
+│   ├── supabase-infrastructure.md — Supabase setup (Storage, Auth, DB)
+│   ├── integrations.md  — SendGrid, Twilio, Stripe, Gemini setup + code
 │   ├── mobile.md        — Expo config, navigation, push, EAS Build
-│   └── deployment.md    — Cloud Build pipeline, phases, secrets, domain
+│   └── deployment.md    — CI/CD pipeline, phases, secrets, domain
 └── EduGenie_OS_PRD_Compact_v1.0.pdf — Original source PRD
 ```
 
@@ -78,7 +78,7 @@ C:\Users\dilsa\Desktop\Edugenio\
 - Scaffold backend (FastAPI + SQLAlchemy + Alembic)
 - Scaffold frontend-web (Next.js + Tailwind + Radix)
 - Scaffold mobile-app (React Native + Expo)
-- Write Terraform for GCP infrastructure
+- Write Terraform for infrastructure
 - Implement core models and migrations
 - Implement API endpoints
 - Implement AI agents (LangGraph)

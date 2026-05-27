@@ -13,14 +13,14 @@ No cloud or product logic. Everything downstream assumes this exists.
 
 | Task | Description | Branch | Dependencies | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| P0-1 · GCP project & IAM | Project creation, IAM service accounts, Secret Manager secrets, Cloud Run + Storage API enablement | `feature/gcp-infra-setup` | — | ❌ Pending |
+| P0-1 · Infrastructure setup & IAM | Infrastructure setup & IAM | `feature/infra-setup` | — | ❌ Pending |
 | P0-2 · Supabase DB + Auth | PostgreSQL 16 schema + pgvector extension, Auth bootstrap (magic link, OAuth), RLS policies, Alembic migrations scaffold | `feature/db-auth-bootstrap` | P0-1 | ❌ Pending |
 | P0-3 · Backend + Frontend skeleton | FastAPI app scaffold (config, DI, health endpoint) + Next.js 14 App Router shell (layout, routing, Tailwind, Radix UI) | `feature/app-skeleton` | P0-2 | ❌ Pending |
-| P0-4 · Redis + Job Queue | Memorystore Redis setup, BullMQ task queue for async course builds + video renders | `feature/queue-redis` | P0-1 | ❌ Pending |
+| P0-4 · Redis + Job Queue | Redis setup, BullMQ task queue for async course builds + video renders | `feature/queue-redis` | P0-1 | ❌ Pending |
 | P0-5 · LangGraph orchestrator | Supervisor agent skeleton, pipeline state machine, checkpointing, stage transition logic | `feature/langgraph-base` | P0-3 | ❌ Pending |
 | P0-6 · Intelligence + Architect agents (F1, F2) | Market research agent (web search, competitor scrape, demand scoring) + Curriculum architect agent (Bloom's taxonomy, module/lesson structure) | `feature/agents-intel-arch` | P0-4, P0-5 | ❌ Pending |
 | P0-7 · Creator OS shell (F8) | Topic brief input UI + Curriculum review & reorder interface | `feature/ui-creator-shell` | P0-3, P0-6 | ❌ Pending |
-| P0-8 · CI/CD pipeline | Cloud Build triggers, Docker builds, Artifact Registry, staging deploy to Cloud Run, blue/green traffic split | `feature/ci-cd-pipeline` | P0-1 | ❌ Pending |
+| P0-8 · CI/CD pipeline | GitHub Actions triggers, Docker builds, Container Registry, staging deploy to Container, blue/green traffic split | `feature/ci-cd-pipeline` | P0-1 | ❌ Pending |
 
 ---
 
@@ -30,7 +30,7 @@ Depends on P0. AI agents, Creator Studio, LearnSpace, Stripe payments, and mobil
 
 | Task | Description | Branch | Dependencies | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| P1-1 · Scriptwriter + MediaForge agents (F3, F4) | Lesson script writing (parallel, 2K–4K words each) + Slide generation (python-pptx, DALL-E 3), ElevenLabs TTS narration, FFmpeg video render with Whisper captions | `feature/agents-media` | P0-5 | ❌ Pending |
+| P1-1 · Scriptwriter + MediaForge agents (F3, F4) | Lesson script writing (parallel, 2K–4K words each) + Slide generation (python-pptx, Gemini), ElevenLabs TTS narration, FFmpeg video render with Gemini captions | `feature/agents-media` | P0-5 | ❌ Pending |
 | P1-2 · Evaluator + Launchpad agents (F5, F6) | Quiz generator (MCQ/T/F/fill-blank, 5–12 per module), capstone + rubric + flashcards + Sales page HTML, pricing rec, 6-email sequence, 15 social posts | `feature/agents-eval-launch` | P0-5 | ❌ Pending |
 | P1-3 · Creator Studio full review (F8) | 6-stage review flow: Market → Curriculum → Scripts → Slides/Video → Quizzes → Launch. Inline editing, regeneration-with-note, approval gates, progress tracking | `feature/ui-creator-review` | P0-7, P1-1, P1-2 | ❌ Pending |
 | P1-4 · LearnSpace player + assessments (F14, F15) | Video player (captions, speed, chapters, auto-resume), note-taking, quiz interface, certificate auto-generation (PDF/PNG), LinkedIn deeplink, public verification page | `feature/ui-learnspace` | P0-3, P1-1, P1-2 | ❌ Pending |
@@ -50,7 +50,7 @@ Depends on P1. Marketplace, affiliates, analytics, multi-language, and white-lab
 | P2-1 · Optimizer agent (F7) | Weekly post-launch analysis: drop-off heatmap, quiz failure patterns, discussion mining, sentiment NLP, prioritized improvement report with one-click fix links | `feature/agent-optimizer` | P1-1, P1-2 | ❌ Pending |
 | P2-2 · Marketplace + Algolia (F16) | Public course catalog with Algolia search (faceted filters, autocomplete, personalized ranking), AI recommendations, free preview lessons, trending collections | `feature/marketplace-algolia` | P1-5 | ❌ Pending |
 | P2-3 · Affiliates + Revenue (F12, F10) | Affiliate link generation, real-time conversion tracking, Stripe Connect payouts, fraud detection. Revenue dashboard: earnings by course/channel/period, refund rate, MoM growth, tax docs | `feature/affiliate-revenue` | P1-5 | ❌ Pending |
-| P2-4 · Multi-language (F13) | 6 languages (EN/ES/PT/FR/DE/JA) via OpenAI + ElevenLabs, cultural localization, language-native voice models, localized sales pages with hreflang SEO, PPP pricing | `feature/multi-language` | P1-1, P1-2 | ❌ Pending |
+| P2-4 · Multi-language (F13) | 6 languages (EN/ES/PT/FR/DE/JA) via Gemini + ElevenLabs, cultural localization, language-native voice models, localized sales pages with hreflang SEO, PPP pricing | `feature/multi-language` | P1-1, P1-2 | ❌ Pending |
 | P2-5 · White-label + Promo codes | White-label storefront with custom domain CNAME, brand customization (colors, logo, fonts), promo code engine (Stripe Coupon API, %/fixed, max uses, validity window) | `feature/whitelabel-promo` | P1-5 | ❌ Pending |
 | P2-6 · Course versioning (F11) | Selective regeneration per module/lesson, version history, student change notifications, content staleness scanner, 3 active versions per course | `feature/course-versioning` | P1-1, P1-3 | ❌ Pending |
 | P2-7 · Mobile EAS builds | EAS Build config for iOS TestFlight + Android internal track, push notifications (Expo + FCM), deep linking, Stripe SDK integration for mobile payments | `feature/mobile-eas-builds` | P1-7 | ❌ Pending |
@@ -79,8 +79,8 @@ Depends on P3. Optimization, security hardening, and GA launch.
 
 | Task | Description | Branch | Dependencies | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| P4-1 · Cost optimization | AI model routing (GPT-4o-mini for low-complexity tasks), narration caching by script hash, preemptible VMs for FFmpeg, Cloud CDN edge caching, Cloud Run min-instances=0 for non-critical services | `feature/scale-optimization` | P1-1, P1-2 | ❌ Pending |
-| P4-2 · Security hardening | Penetration testing (third-party), bug bounty program launch, prompt injection audit, OWASP Top 10 scan, Cloud Armor WAF tuning, secret rotation automation | `feature/security-hardening` | P3-6 | ❌ Pending |
+| P4-1 · Cost optimization | AI model routing (Gemini 3.5 Flash for low-complexity tasks), narration caching by script hash, preemptible VMs for FFmpeg, CDN edge caching, Container min-instances=0 for non-critical services | `feature/scale-optimization` | P1-1, P1-2 | ❌ Pending |
+| P4-2 · Security hardening | Penetration testing (third-party), bug bounty program launch, prompt injection audit, OWASP Top 10 scan, WAF tuning, secret rotation automation | `feature/security-hardening` | P3-6 | ❌ Pending |
 | P4-3 · Load testing (k6) | 300 concurrent pipeline builds, 5,000 concurrent video streams, 1,000 API req/sec sustained, 48-hour soak test pre-major release | `feature/load-testing` | P3-1, P3-5 | ❌ Pending |
 | P4-4 · DR & runbooks | Disaster recovery drills, RPO < 1hr / RTO < 3hrs validation, runbook documentation, automated failover testing, backup restoration drills | `feature/dr-runbooks` | P0-1, P0-8 | ❌ Pending |
 | P4-5 · GA launch | Marketing assets (demo video, case studies, landing page), partner program launch, public pricing page, self-serve onboarding flow, first customer onboarding program | `feature/ga-launch` | All P0–P3 | ❌ Pending |
@@ -92,7 +92,7 @@ Depends on P3. Optimization, security hardening, and GA launch.
 ```text
 P0 (Foundation) ──────────────────────────────────────────────────────────┐
   │                                                                        │
-  ├─ P0-1 (GCP)  ← P0-2 (DB) ← P0-3 (Skeleton) ← P0-5 (LangGraph) ─────┐│
+  ├─ P0-1 (Infra)  ← P0-2 (DB) ← P0-3 (Skeleton) ← P0-5 (LangGraph) ─────┐│
   │                P0-1 ← P0-4 (Queue) ← P0-6 (Intel+Arch)               ││
   │                P0-3 + P0-6 ← P0-7 (UI Shell)                        ││
   │                P0-1 ← P0-8 (CI/CD)                                   ││

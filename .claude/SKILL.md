@@ -51,27 +51,27 @@ Required skills and competencies for developing, deploying, and maintaining the 
 
 | Skill | Level | Details |
 |-------|-------|---------|
-| OpenAI API | Advanced | GPT-4o, GPT-4o-mini, Whisper, TTS, embeddings, function calling |
+| Gemini API | Advanced | Gemini 3.5 Flash, Gemini Embedding 2, TTS, STT, function calling |
 | LangChain / LangGraph | Advanced | Agent chains, tools, memory, streaming, callbacks |
 | Prompt Engineering | Advanced | System prompts, few-shot, chain-of-thought, structured output |
 | ElevenLabs API | Intermediate | Voice cloning, TTS, pronunciation dictionary, quality scoring |
 | pgvector | Intermediate | Vector embeddings, similarity search, hybrid search (vector + BM25) |
 | Langfuse | Intermediate | LLM tracing, cost tracking, prompt management, dataset management |
 
-## Cloud & DevOps (GCP)
+## Container & DevOps
 
 | Skill | Level | Details |
 |-------|-------|---------|
-| GCP Cloud Run | Advanced | Service deployment, scaling, revision management, traffic splitting |
-| GCP Cloud Storage | Intermediate | Bucket management, signed URLs, lifecycle policies, versioning |
-| GCP Cloud Batch | Intermediate | Job definition, array jobs, preemptible VMs, logging |
-| GCP Memorystore (Redis) | Intermediate | Cluster management, connection pooling, persistence |
-| GCP Cloud Build | Advanced | Pipeline as code, build steps, substitutions, triggers, secrets |
-| GCP Secret Manager | Intermediate | Secret creation, versioning, access control, rotation |
-| GCP Cloud Logging | Intermediate | Structured logging, log-based metrics, exports, log queries |
-| GCP Cloud Monitoring | Intermediate | Dashboards, alerting policies, uptime checks, custom metrics |
-| GCP IAM | Intermediate | Service accounts, roles, policies, conditions, least privilege |
-| GCP VPC / Load Balancer / CDN / Armor | Intermediate | Network design, WAF rules, CDN caching, SSL certificates |
+| Docker containers / hosting platform | Advanced | Service deployment, scaling, revision management, traffic splitting |
+| Supabase Storage | Intermediate | Bucket management, signed URLs, lifecycle policies, versioning |
+| Docker / FFmpeg workers | Intermediate | Job definition, array jobs, logging |
+| Redis | Intermediate | Cluster management, connection pooling, persistence |
+| GitHub Actions | Advanced | Pipeline as code, build steps, substitutions, triggers, secrets |
+| Secrets management | Intermediate | Secret creation, versioning, access control, rotation |
+| Prometheus / structured logging | Intermediate | Structured logging, log-based metrics, exports, log queries |
+| Grafana | Intermediate | Dashboards, alerting policies, uptime checks, custom metrics |
+| RBAC / IAM | Intermediate | Service accounts, roles, policies, conditions, least privilege |
+| Networking / CDN / WAF | Intermediate | Network design, WAF rules, CDN caching, SSL certificates |
 | Terraform | Advanced | Module design, state management, workspaces, remote backends |
 
 ## Third-Party Integrations
@@ -93,8 +93,8 @@ Required skills and competencies for developing, deploying, and maintaining the 
 | Supabase | Intermediate | Project setup, RLS policies, real-time subscriptions, backups |
 | SQLAlchemy 2.0 | Advanced | Async ORM, relationship patterns, eager loading, migrations |
 | Redis | Intermediate | Data structures, pub/sub, TTL, caching patterns, BullMQ |
-| GCP Cloud Storage | Intermediate | Object lifecycle, signed URLs, CORS configuration |
-| Cloud CDN | Intermediate | Cache invalidation, origin configuration, signed URLs |
+| Supabase Storage | Intermediate | Object lifecycle, signed URLs, CORS configuration |
+| CDN | Intermediate | Cache invalidation, origin configuration, signed URLs |
 
 ## Testing & Quality
 

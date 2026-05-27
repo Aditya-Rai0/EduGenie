@@ -9,21 +9,21 @@ Detailed phase-by-phase breakdown with tasks, timelines, dependencies, and deliv
 ### Goal
 Stand up infrastructure, database, auth, CI/CD, and local dev environment. Deliver a working skeleton that can create an empty course end-to-end via API.
 
-### Week 1-2: GCP Infrastructure
+### Week 1-2: Infrastructure
 
 #### Tasks
-- [ ] Create GCP project, enable APIs (Run, Build, Storage, Secret Manager, Cloud Batch, Monitoring)
-- [ ] Set up Terraform backend (Cloud Storage bucket for state)
-- [ ] Terraform modules: `compute/` (Cloud Run services), `network/` (VPC, LB, CDN, Armor), `storage/` (Cloud Storage, Memorystore), `monitoring/` (dashboards, alerts), `cicd/` (Cloud Build triggers)
-- [ ] Provision: Cloud Run (backend, frontend, workers), Memorystore (Redis 5GB), Cloud Storage (media bucket with lifecycle), Cloud CDN, Cloud Load Balancer, Cloud Armor
+- [ ] Create Infrastructure project, enable APIs (Run, Build, Storage, secret store, Docker worker, monitoring)
+- [ ] Set up Terraform backend (Supabase Storage bucket for state)
+- [ ] Terraform modules: `compute/` (Container services), `network/` (VPC, LB, CDN, WAF), `storage/` (Supabase Storage, Redis), `monitoring/` (dashboards, alerts), `cicd/` (GitHub Actions triggers)
+- [ ] Provision: Container (backend, frontend, workers), Redis (Redis 5GB), Supabase Storage (media bucket with lifecycle), CDN, Load balancer, WAF
 - [ ] Create service accounts with least-privilege IAM
-- [ ] Store all secrets in Secret Manager (OpenAI, Stripe, SendGrid, Twilio, Algolia, Supabase)
-- [ ] Configure VPC, Serverless VPC Connector, firewall rules
+- [ ] Store all secrets in secret store (Gemini, Stripe, SendGrid, Twilio, Algolia, Supabase)
+- [ ] Configure VPC, firewall rules
 
 #### Deliverables
 - `infra/terraform/` — Modules, environments (dev/staging/prod)
-- GCP project with all services provisioned
-- Secret Manager populated with all API keys
+- Infrastructure project with all services provisioned
+- Secret store populated with all API keys
 
 ### Week 2-3: Database & Auth
 
@@ -47,13 +47,13 @@ Stand up infrastructure, database, auth, CI/CD, and local dev environment. Deliv
 
 #### Tasks
 - [ ] FastAPI project scaffold with dependency injection
-- [ ] Settings (pydantic-settings) with env override + Secret Manager integration
-- [ ] Core utilities: `security.py`, `cache.py` (Redis), `storage.py` (GCP), `queue.py` (BullMQ/arq)
+- [ ] Settings (pydantic-settings) with env override + secret store integration
+- [ ] Core utilities: `security.py`, `cache.py` (Redis), `storage.py` (Supabase), `queue.py` (BullMQ/arq)
 - [ ] API v1 router structure with all endpoint stubs
 - [ ] Health check endpoints (`/health`, `/health/detailed`)
 - [ ] Base agent class (`agents/base.py`) and orchestrator skeleton
 - [ ] WebSocket manager for pipeline + notifications
-- [ ] Logging setup (Cloud Logging structured JSON)
+- [ ] Logging setup (structured JSON)
 - [ ] Error handling middleware (custom exceptions, validation errors, 500 handler)
 
 #### Deliverables
@@ -85,7 +85,7 @@ Stand up infrastructure, database, auth, CI/CD, and local dev environment. Deliv
 ### Week 5-6: CI/CD & Local Dev
 
 #### Tasks
-- [ ] Cloud Build pipeline: lint (ruff, eslint) -> type check (mypy, tsc) -> test (pytest, jest) -> build (Docker) -> push (Artifact Registry) -> deploy (Cloud Run)
+- [ ] GitHub Actions pipeline: lint (ruff, eslint) -> type check (mypy, tsc) -> test (pytest, jest) -> build (Docker) -> push (Container Registry) -> deploy (Container)
 - [ ] Blue/green deployment with traffic splitting
 - [ ] Post-deploy smoke tests
 - [ ] Docker Compose local dev environment (FastAPI, Next.js, Supabase local, Redis, MailHog)
@@ -93,7 +93,7 @@ Stand up infrastructure, database, auth, CI/CD, and local dev environment. Deliv
 - [ ] README and development docs
 
 #### Deliverables
-- `infra/cloudbuild.yaml` — Full CI/CD pipeline
+- `.github/workflows/main.yml` — Full CI/CD pipeline
 - `docker-compose.yml` — Local dev environment
 - `.pre-commit-config.yaml`
 - `docs/development.md`
@@ -126,7 +126,7 @@ Stand up infrastructure, database, auth, CI/CD, and local dev environment. Deliv
 - [ ] Stripe Checkout session creates successfully (test mode)
 - [ ] SendGrid email sends (test mode)
 - [ ] Twilio WhatsApp message sends (test mode)
-- [ ] Secrets accessible via Secret Manager in staging
+- [ ] Secrets accessible via secret store in staging
 - [ ] Load test: 50 concurrent requests, p95 < 500ms
 
 ---
@@ -172,23 +172,23 @@ Build the full 7-agent AI pipeline, Creator Studio review workflow, LearnSpace c
   - [VERIFY] flags on uncertain claims
   - Plagiarism check via Originality.ai (> 12% triggers regeneration)
   - PII scan via Microsoft Presidio before storing
-  - Script storage in Cloud Storage (JSON + markdown)
+  - Script storage in Supabase Storage (JSON + markdown)
 - [ ] MediaForge Agent — Slides
   - Slide generation: JSON outline per lesson (10-20 slides)
   - `python-pptx` render to PPTX
   - PNG frame extraction for video compositing
-  - Storage: PPTX + PNG frames in Cloud Storage
+  - Storage: PPTX + PNG frames in Supabase Storage
 - [ ] MediaForge Agent — Voice
-  - OpenAI TTS (primary) or ElevenLabs (if voice model trained)
+  - Gemini TTS (primary) or ElevenLabs (if voice model trained)
   - MP3 narration generation per lesson
   - Caching by `(script_hash + voice_id)` — ~35% cost reduction
-  - Storage: MP3 in Cloud Storage
+  - Storage: MP3 in Supabase Storage
 - [ ] MediaForge Agent — Video
   - FFmpeg rendering (PNG frames + MP3 narration)
   - 1080p MP4 output
-  - Whisper SRT caption generation
-  - Cloud Batch job submission (preemptible VMs)
-  - Storage: MP4 + SRT in Cloud Storage
+  - Gemini STT caption generation
+  - Docker worker job submission
+  - Storage: MP4 + SRT in Supabase Storage
 
 #### Deliverables
 - `backend/app/agents/scriptwriter_agent.py`
@@ -376,7 +376,7 @@ Launch public beta with marketplace, affiliates, analytics, multi-language, mobi
 
 #### Tasks
 - [ ] 6 target languages: Spanish, French, German, Portuguese, Hindi, Japanese
-- [ ] OpenAI translation pipeline (course content, scripts, quizzes)
+- [ ] Gemini translation pipeline (course content, scripts, quizzes)
 - [ ] ElevenLabs multilingual TTS (per-language voice models)
 - [ ] Subtitle generation per language
 - [ ] Language selector (student preference)

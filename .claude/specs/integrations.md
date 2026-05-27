@@ -6,7 +6,7 @@
 2. [Twilio WhatsApp Integration](#b-twilio-whatsapp-integration)
 3. [Stripe Payment Integration](#c-stripe-payment-integration)
 4. [In-App Notification System](#d-in-app-notification-system)
-5. [OpenAI API Integration](#e-openai-api-integration)
+5. [Gemini API Integration](#e-gemini-api-integration)
 6. [ElevenLabs Voice Integration](#f-elevenlabs-voice-integration)
 7. [Algolia Search Integration](#g-algolia-search-integration)
 8. [Other Integrations](#h-other-integrations)
@@ -20,7 +20,7 @@ Transactional emails, launch sequences, affiliate notifications, weekly digests.
 
 ### Setup
 1. Create SendGrid account, verify sender identity (SPF/DKIM)
-2. Store API key in GCP Secret Manager as `SENDGRID_API_KEY`
+2. Store API key in environment / secret store as `SENDGRID_API_KEY`
 3. Implement `backend/app/integrations/sendgrid.py`
 
 ### Email Templates
@@ -75,7 +75,7 @@ WhatsApp Business notifications for course updates, enrollment confirmations, en
 ### Setup
 1. Twilio account with WhatsApp Business API enabled
 2. Register WhatsApp Business sender number
-3. Store Twilio Account SID and Auth Token in GCP Secret Manager
+3. Store Twilio Account SID and Auth Token in environment / secret store
 4. Configure webhook URL at Twilio Console: `https://api.edugenie.io/api/v1/webhooks/twilio`
 
 ### Message Templates (pre-approved by WhatsApp)
@@ -120,8 +120,8 @@ async def twilio_webhook(request: Request):
 ## C. Stripe Payment Integration
 
 ### Setup
-1. Stripe account, API keys (pk_*, sk_*) in GCP Secret Manager
-2. Webhook signing secret in Secret Manager
+1. Stripe account, API keys (pk_*, sk_*) in environment / secret store
+2. Webhook signing secret in environment / secret store
 3. Configure webhook endpoint: `https://api.edugenie.io/api/v1/webhooks/stripe`
 
 ### Products & Prices
@@ -231,32 +231,32 @@ CREATE INDEX idx_notifications_user_unread
 
 ---
 
-## E. OpenAI API Integration
+## E. Gemini API Integration
 
 ### Services Used
 
 | Service | Purpose | Model |
 |---------|---------|-------|
-| Text Generation (Primary) | Content creation, curriculum, scripts, quizzes | GPT-4o / GPT-4o-mini |
-| Text Generation (Fallback) | Failover when primary unavailable | Anthropic Claude |
-| Embeddings | Semantic search, vector store | `text-embedding-3-small` (1536d) |
-| Speech-to-Text | Caption generation from narration | Whisper API |
-| Text-to-Speech | Voice narration for videos | OpenAI TTS API |
-| Speech-to-Speech | Pipeline for voice interactions | Whisper → GPT-4o → TTS |
-| Image Generation | Slide illustrations, thumbnails, hero images | DALL-E 3 |
+| Text Generation (Primary) | Content creation, curriculum, scripts, quizzes | Gemini 3.5 Flash |
+| Text Generation (Fallback) | Failover when primary unavailable | Gemini 3.5 Flash |
+| Embeddings | Semantic search, vector store | Gemini Embedding 2 (1536d) |
+| Speech-to-Text | Caption generation from narration | Gemini 3.5 Flash (multimodal) |
+| Text-to-Speech | Voice narration for videos | Gemini TTS API |
+| Speech-to-Speech | Pipeline for voice interactions | Gemini 3.5 Flash → TTS |
+| Image Generation | Slide illustrations, thumbnails, hero images | Gemini |
 
 ### Model Routing Strategy
 | Task | Model | Rationale |
 |------|-------|-----------|
-| Curriculum design | GPT-4o | High complexity, needs deep reasoning |
-| Lesson scripts | GPT-4o | Quality-critical, long-form content |
-| Quizzes | GPT-4o-mini | Lower complexity, cost-optimized |
-| Social posts | GPT-4o-mini | Short-form, high volume |
-| Market research | GPT-4o + Tools | Needs web browsing + vision |
-| Sales page copy | GPT-4o | Quality-critical conversion copy |
+| Curriculum design | Gemini 3.5 Flash | High complexity, needs deep reasoning |
+| Lesson scripts | Gemini 3.5 Flash | Quality-critical, long-form content |
+| Quizzes | Gemini 3.5 Flash | Lower complexity, cost-optimized |
+| Social posts | Gemini 3.5 Flash | Short-form, high volume |
+| Market research | Gemini 3.5 Flash + Tools | Needs web browsing |
+| Sales page copy | Gemini 3.5 Flash | Quality-critical conversion copy |
 
 ### Integration File
-`backend/app/integrations/openai.py` — Centralized client with retries, rate limiting, cost tracking via Langfuse.
+`backend/app/integrations/gemini.py` — Centralized client with retries, rate limiting, cost tracking via Langfuse.
 
 ---
 
@@ -324,9 +324,9 @@ ALGOLIA_INDEX_NAME=edugenie_courses
 - **Retention:** Prompts + responses stored for 90 days
 - **Integration File:** `backend/app/integrations/` (initialized in `agents/base.py`)
 
-### Google Custom Search API + Bing Search API
+### Web Search API
 - **Purpose:** Intelligence Agent web research
-- **Usage:** Combined for breadth; results deduplicated and relevance-ranked
+- **Usage:** Web search for market research, competitor analysis, and content validation
 - **Implementation:** `backend/app/agents/tools/web_search.py`
 
 ### Originality.ai (Plagiarism Check)
@@ -336,5 +336,5 @@ ALGOLIA_INDEX_NAME=edugenie_courses
 
 ### Microsoft Presidio (PII Detection)
 - **Purpose:** PII scan on creator-uploaded reference content before LLM context injection
-- **Deployment:** Self-hosted on Cloud Run
+- **Deployment:** Self-hosted on Docker container
 - **Integration File:** `backend/app/integrations/presidio.py`

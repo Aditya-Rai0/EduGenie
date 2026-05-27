@@ -2,7 +2,7 @@
 
 ## CI/CD Pipeline
 
-### Cloud Build Configuration
+### GitHub Actions Configuration
 
 **Trigger:** On push to `develop`/`main` branches
 
@@ -11,116 +11,12 @@
 2. **Type check** — mypy for Python, tsc for TypeScript
 3. **Unit tests** — pytest (backend), Jest (frontend)
 4. **Security scan** — Snyk / Trivy
-5. **Docker build** → Artifact Registry
+5. **Docker build** → Container Registry
 6. **Integration tests**
-7. **Deploy to Cloud Run** (staging auto, production manual promotion gate)
+7. **Deploy** (staging auto, production manual promotion gate)
 
-**Deployment Strategy:** Blue/green via Cloud Run revision traffic splitting
-**Post-deploy:** Smoke tests → 100% traffic shift → 1hr monitoring standby
-
-### Cloud Build YAML
-```yaml
-# cloudbuild.yaml
-steps:
-  # Backend
-  - name: 'python:3.12'
-    id: 'backend-lint'
-    entrypoint: 'bash'
-    args: ['-c', 'pip install ruff mypy && ruff check backend/ && mypy backend/']
-  - name: 'python:3.12'
-    id: 'backend-test'
-    entrypoint: 'bash'
-    args: ['-c', 'pip install -r backend/requirements/dev.txt && pytest backend/tests/unit/']
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'backend-build'
-    args:
-      - 'build'
-      - '-t'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/edugenie/backend:$SHORT_SHA'
-      - '-f'
-      - 'backend/Dockerfile'
-      - 'backend/'
-    waitFor: ['backend-test']
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'backend-push'
-    args:
-      - 'push'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/edugenie/backend:$SHORT_SHA'
-    waitFor: ['backend-build']
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: 'backend-deploy'
-    entrypoint: 'gcloud'
-    args:
-      - 'run'
-      - 'deploy'
-      - 'edugenie-backend'
-      - '--image=us-central1-docker.pkg.dev/$PROJECT_ID/edugenie/backend:$SHORT_SHA'
-      - '--region=us-central1'
-      - '--platform=managed'
-      - '--allow-unauthenticated'
-      - '--memory=2Gi'
-      - '--cpu=2'
-      - '--min-instances=1'
-      - '--max-instances=100'
-      - '--concurrency=80'
-      - '--set-secrets=OPENAI_API_KEY=openai-api-key:latest,...'
-    waitFor: ['backend-push']
-
-  # Frontend Web
-  - name: 'node:20'
-    id: 'frontend-lint'
-    entrypoint: 'bash'
-    args: ['-c', 'cd frontend-web && npm ci && npm run lint']
-  - name: 'node:20'
-    id: 'frontend-build'
-    entrypoint: 'bash'
-    args: ['-c', 'cd frontend-web && npm ci && npm run build']
-    waitFor: ['frontend-lint']
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'frontend-image'
-    args:
-      - 'build'
-      - '-t'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/edugenie/frontend:$SHORT_SHA'
-      - '-f'
-      - 'frontend-web/Dockerfile'
-      - 'frontend-web/'
-    waitFor: ['frontend-build']
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'frontend-push'
-    args:
-      - 'push'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/edugenie/frontend:$SHORT_SHA'
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: 'frontend-deploy'
-    entrypoint: 'gcloud'
-    args:
-      - 'run'
-      - 'deploy'
-      - 'edugenie-frontend'
-      - '--image=us-central1-docker.pkg.dev/$PROJECT_ID/edugenie/frontend:$SHORT_SHA'
-      - '--region=us-central1'
-      - '--platform=managed'
-      - '--allow-unauthenticated'
-    waitFor: ['frontend-push']
-
-  # Database Migrations
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: 'db-migrate'
-    entrypoint: 'bash'
-    args: ['-c', 'alembic upgrade head']
-    env:
-      - 'SUPABASE_URL=$_SUPABASE_URL'
-      - 'SUPABASE_SERVICE_ROLE_KEY=$_SUPABASE_SERVICE_ROLE_KEY'
-    waitFor: ['backend-test']
-
-timeout: 1800s
-substitutions:
-  _SUPABASE_URL: ''
-  _SUPABASE_SERVICE_ROLE_KEY: ''
-options:
-  machineType: 'E2_HIGHCPU_8'
-```
+**Deployment Strategy:** Rolling update strategy
+**Post-deploy:** Smoke tests → 1hr monitoring standby
 
 ### EAS Build for Mobile
 ```bash
@@ -140,111 +36,48 @@ eas submit --platform android --profile production
 
 ## Deployment Guide
 
-### 1. GCP Project Setup
-```bash
-gcloud projects create edugenie-prod --name="EduGenie Production"
-gcloud config set project edugenie-prod
+### 1. Platform Setup
+- Choose a Docker-compatible hosting platform (Render, Railway, Fly.io, or self-hosted VPS)
+- Set up Supabase project (PostgreSQL 16 + pgvector + Storage + Auth)
+- Configure Redis instance (Upstash, Redis Labs, or self-hosted)
 
-# Enable required APIs
-gcloud services enable \
-  run.googleapis.com \
-  cloudbuild.googleapis.com \
-  storage.googleapis.com \
-  cloudcdn.googleapis.com \
-  compute.googleapis.com \
-  secretmanager.googleapis.com \
-  cloudresourcemanager.googleapis.com \
-  iam.googleapis.com \
-  logging.googleapis.com \
-  monitoring.googleapis.com \
-  cloudbatch.googleapis.com
-```
-
-### 2. Service Accounts & IAM
-
-Create dedicated service accounts with least-privilege roles:
-
-```bash
-# Backend service account
-gcloud iam service-accounts create edugenie-backend \
-  --display-name="EduGenie Backend SA"
-
-# Grant storage admin
-gcloud projects add-iam-policy-binding edugenie-prod \
-  --member="serviceAccount:edugenie-backend@edugenie-prod.iam.gserviceaccount.com" \
-  --role="roles/storage.objectAdmin"
-
-# Grant secret accessor
-gcloud projects add-iam-policy-binding edugenie-prod \
-  --member="serviceAccount:edugenie-backend@edugenie-prod.iam.gserviceaccount.com" \
-  --role="roles/secretmanager.secretAccessor"
-
-# Grant run invoker
-gcloud projects add-iam-policy-binding edugenie-prod \
-  --member="serviceAccount:edugenie-backend@edugenie-prod.iam.gserviceaccount.com" \
-  --role="roles/run.invoker"
-
-# Worker service account (adds batch job editor)
-gcloud iam service-accounts create edugenie-workers \
-  --display-name="EduGenie Workers SA"
-gcloud projects add-iam-policy-binding edugenie-prod \
-  --member="serviceAccount:edugenie-workers@edugenie-prod.iam.gserviceaccount.com" \
-  --role="roles/batch.jobsEditor"
-```
-
-### 3. Infrastructure Provisioning (Terraform)
+### 2. Infrastructure Provisioning (Terraform)
 ```bash
 cd infra/terraform
-terraform init -backend-config="bucket=edugenie-tfstate"
+terraform init
 terraform workspace new staging
-terraform plan -var-file="environments/staging.tfvars"
 terraform apply -var-file="environments/staging.tfvars"
 ```
 
-### 4. Secrets Management (Secret Manager)
+### 3. Secrets Management
 ```bash
-# Store all secrets — one-time setup
-echo -n "sk-proj-..." | gcloud secrets create openai-api-key --data-file=-
-echo -n "SG.xxxxx" | gcloud secrets create sendgrid-api-key --data-file=-
-echo -n "ACxxxxx:xxxxx" | gcloud secrets create twilio-auth --data-file=-
-echo -n "sk_live_..." | gcloud secrets create stripe-secret-key --data-file=-
-echo -n "whsec_..." | gcloud secrets create stripe-webhook-secret --data-file=-
-echo -n "..." | gcloud secrets create elevenlabs-api-key --data-file=-
-echo -n "..." | gcloud secrets create algolia-api-key --data-file=-
-echo -n "..." | gcloud secrets create supabase-service-role-key --data-file=-
-echo -n "..." | gcloud secrets create jwt-secret --data-file=-
+# Store secrets in your platform's secret store or .env
+# Required secrets:
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+GEMINI_API_KEY=
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+STRIPE_CONNECT_CLIENT_ID=
+SENDGRID_API_KEY=
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_WHATSAPP_NUMBER=
+ALGOLIA_APP_ID=
+ALGOLIA_API_KEY=
 ```
 
-### 5. Custom Domain Setup
-```bash
-# Verify domain ownership
-gcloud domains verify edugenie.io
-
-# Create managed DNS zone
-gcloud dns managed-zones create edugenie-zone \
-  --dns-name="edugenie.io." \
-  --visibility=public
-
-# Point API subdomain to load balancer
-gcloud dns record-sets create api.edugenie.io \
-  --zone=edugenie-zone \
-  --type=A \
-  --ttl=300 \
-  --rrdatas="$(gcloud compute addresses describe edugenie-lb-ip --global --format='value(address)')"
-```
-
-### 6. SSL/TLS
-- Cloud Load Balancer: Managed SSL certificate (Google Trust Services / Let's Encrypt)
-- Automatic renewal
-- TLS 1.3 enforced
-- HSTS header configured on Load Balancer
+### 4. Custom Domain & SSL
+- Configure DNS A/CNAME records pointing to your hosting provider
+- SSL/TLS is handled automatically by the hosting platform
+- TLS 1.3 enforced, HSTS header recommended
 
 ---
 
 ## Environment Variables
 
 ### .env.local (development)
-All secrets stored in GCP Secret Manager in production:
+All secrets stored in environment variables:
 
 ```bash
 ENVIRONMENT=development
@@ -252,18 +85,10 @@ ENVIRONMENT=development
 # Supabase
 SUPABASE_URL=https://xxx.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=eyJ...
+SUPABASE_ANON_KEY=eyJ...
 
-# GCP
-GCP_PROJECT_ID=edugenie-prod
-GCP_REGION=us-central1
-GCP_STORAGE_BUCKET=edugenie-media
-
-# OpenAI
-OPENAI_API_KEY=sk-...
-OPENAI_ORG_ID=org-...
-
-# ElevenLabs
-ELEVENLABS_API_KEY=...
+# Gemini
+GEMINI_API_KEY=AIza...
 
 # Stripe
 STRIPE_SECRET_KEY=sk_live_...
@@ -283,10 +108,13 @@ ALGOLIA_APP_ID=...
 ALGOLIA_API_KEY=...
 ALGOLIA_INDEX_NAME=edugenie_courses
 
+# ElevenLabs (voice cloning, optional)
+ELEVENLABS_API_KEY=...
+
 # PostHog
 POSTHOG_API_KEY=phc_...
 
-# Langfuse
+# Langfuse (AI observability, optional)
 LANGFUSE_PUBLIC_KEY=...
 LANGFUSE_SECRET_KEY=...
 ```
@@ -297,7 +125,7 @@ LANGFUSE_SECRET_KEY=...
 
 | Scenario | Action | Time |
 |----------|--------|------|
-| **Application** | One-command Cloud Run service rollback to previous revision | < 3 min |
+| **Application** | One-command rollback to previous container image | < 3 min |
 | **Database** | `alembic downgrade -1` with verification script | < 5 min |
 | **AI Model** | Feature flag toggle to previous model version (no deployment) | < 15 min |
 | **Full Environment** | Terraform rollback to previous state | < 10 min |
@@ -315,7 +143,7 @@ LANGFUSE_SECRET_KEY=...
 |-------------|---------|---------------|
 | **Development (local)** | Local dev with Docker Compose | All external APIs mocked (VCR.py); local Supabase; Stripe test mode |
 | **Staging** | Pre-prod testing; production mirror | Real AI APIs (rate-limited); test Stripe; 100 seeded courses + 500 students; E2E + load tests |
-| **Production** | Live platform | GCP Cloud Run + Supabase + Cloud Storage + Cloud CDN; 24/7 monitoring; auto-scale active |
+| **Production** | Live platform | Docker containers + Supabase + CDN; 24/7 monitoring; auto-scale active |
 
 ---
 
@@ -326,7 +154,7 @@ LANGFUSE_SECRET_KEY=...
 - Node.js 20+ (nvm or fnm)
 - Docker Desktop (for local Supabase + Redis)
 - Expo CLI (`npm install -g expo-cli`)
-- GCP Cloud SDK (gcloud CLI)
+
 
 ### Setup
 ```bash
@@ -395,14 +223,14 @@ docker compose up -d  # Local Supabase + Redis
 
 ### Phase 0: Foundation (Month 1–2)
 **Deliverables:**
-- GCP infrastructure + Terraform
+- Infrastructure provisioning + Terraform
 - Supabase schema + auth + RLS policies
 - FastAPI project scaffold + Alembic migrations
-- Redis/Memorystore + BullMQ job queue
+- Redis + BullMQ job queue
 - LangGraph orchestrator skeleton
 - Intelligence Agent + Architect Agent
 - Creator OS shell (topic brief + curriculum review screens)
-- Cloud Build CI/CD pipeline
+- GitHub Actions CI/CD pipeline
 - Langfuse AI observability
 - SendGrid + Twilio + Stripe base integrations
 - Docker Compose local dev environment
@@ -412,7 +240,7 @@ docker compose up -d  # Local Supabase + Redis
 - Empty course created via API end-to-end
 - CI/CD pipeline green on push
 - Local dev environment reproducible with one command
-- Secrets accessible via Secret Manager in staging
+- Secrets accessible via secret store in staging
 
 ### Phase 1: Alpha Pipeline (Month 3–4)
 **Deliverables:**
@@ -440,7 +268,7 @@ docker compose up -d  # Local Supabase + Redis
 - Marketplace with Algolia search + AI recommendations
 - Affiliate system with Stripe Connect payouts
 - Analytics dashboard (real-time + weekly AI narrative)
-- Multi-language (6 languages via OpenAI + ElevenLabs)
+- Multi-language (6 languages via Gemini + ElevenLabs)
 - White-label storefront (beta)
 - Promo code engine
 - Course version management

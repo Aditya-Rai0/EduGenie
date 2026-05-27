@@ -22,38 +22,38 @@ EduGenie OS is an AI-powered Course Creation & Launch Platform. It takes a topic
 └──────────────┬───────────────────────────────┘
                │ HTTPS / WSS
 ┌──────────────▼───────────────────────────────┐
-│     GCP Cloud Load Balancer + Cloud Armor     │
-│     (TLS 1.3, WAF, Rate Limiting, Routing)    │
-└──────────────┬───────────────────────────────┘
-               │
-    ┌──────────┼──────────────────┐
-    ▼          ▼                   ▼
-┌─────────┐ ┌──────────────┐ ┌────────────────┐
-│ Next.js │ │ FastAPI      │ │ Redis + BullMQ  │
-│ (Cloud  │ │ Backend      │ │ Job Queue       │
-│  Run)   │ │ (Cloud Run)  │ │ (Memorystore)   │
-└─────────┘ └──────┬───────┘ └────────────────┘
-                   │
-         ┌─────────┴──────────┐
-         ▼                     ▼
-   ┌─────────────┐    ┌────────────────┐
-   │  Services   │    │  AI Agent Layer │
-   │ - Courses   │    │  Intelligence   │
-   │ - Creator   │    │  Architect      │
-   │ - Student   │    │  Scriptwriter   │
-   │ - Commerce  │    │  MediaForge     │
-   └─────────────┘    │  Evaluator      │
-                      │  Launchpad      │
-                      │  Optimizer      │
-                      └───────┬─────────┘
-                              │
-    ┌─────────────────────────┼──────────────┐
-    ▼            ▼            ▼              ▼
-┌────────┐ ┌───────────┐ ┌──────────┐ ┌──────────┐
-│Cloud   │ │ Cloud SQL │ │ Vertex AI│ │ Cloud    │
-│Storage │ │(Supabase) │ │ + OpenAI │ │ Batch    │
-│(Media) │ │ + pgvector│ │  API     │ │(FFmpeg)  │
-└────────┘ └───────────┘ └──────────┘ └──────────┘
+│           Compute Layer (Docker)              │
+│  ┌─────────┐  ┌──────────────┐  ┌──────────┐ │
+│  │ Next.js │  │ FastAPI      │  │ Redis +  │ │
+│  │ Frontend│  │ Backend      │  │ BullMQ   │ │
+│  └─────────┘  └──────┬───────┘  └──────────┘ │
+└──────────────────────┼────────────────────────┘
+                       │
+         ┌─────────────┴─────────────┐
+         ▼                           ▼
+   ┌─────────────┐          ┌──────────────────┐
+   │  Services   │          │  AI Agent Layer   │
+   │ - Courses   │          │  Intelligence     │
+   │ - Creator   │          │  Architect        │
+   │ - Student   │          │  Scriptwriter     │
+   │ - Commerce  │          │  MediaForge       │
+   └─────────────┘          │  Evaluator        │
+                            │  Launchpad        │
+                            │  Optimizer        │
+                            └────────┬──────────┘
+                                     │
+             ┌───────────────────────┼──────────────────┐
+             ▼                       ▼                  ▼
+┌─────────────────────┐  ┌──────────────────┐  ┌──────────────┐
+│  Supabase (Unified) │  │  Gemini 3.5 Flash │  │ FFmpeg       │
+│  ┌───────────────┐  │  │  (Text + Embed +   │  │ (Video       │
+│  │ PostgreSQL 16 │  │  │   TTS + STT)      │  │  Rendering)  │
+│  │ + pgvector    │  │  └──────────────────┘  └──────────────┘
+│  │ Supabase Auth │  │
+│  │ Supabase      │  │
+│  │  Storage      │  │
+│  └───────────────┘  │
+└─────────────────────┘
 ```
 
 ## Data Flow — Course Build (End-to-End)
@@ -65,12 +65,12 @@ Intelligence Agent → web search + competitor scrape → market report
   ↓ [REVIEW GATE: creator approves topic angle]
 Architect Agent → curriculum JSON (modules, lessons, objectives, durations)
   ↓ [REVIEW GATE: creator reorders / approves outline]
-Scriptwriter Agent → parallel script writing → lesson scripts (Cloud Storage)
+Scriptwriter Agent → parallel script writing → lesson scripts (Supabase Storage)
   ↓
 MediaForge Agent → parallel per module:
-  Slide Agent  → slide JSON → python-pptx render → PPTX + PNG frames (Cloud Storage)
-  Voice Agent  → OpenAI TTS / ElevenLabs → MP3 narration (Cloud Storage, cached by hash)
-  Video Agent  → FFmpeg (PNG frames + MP3) → 1080p MP4 + Whisper SRT (Cloud Storage)
+  Slide Agent  → slide JSON → python-pptx render → PPTX + PNG frames (Supabase Storage)
+  Voice Agent  → Gemini TTS / ElevenLabs → MP3 narration (Supabase Storage, cached by hash)
+  Video Agent  → FFmpeg (PNG frames + MP3) → 1080p MP4 + Gemini SRT (Supabase Storage)
   ↓
 Evaluator Agent → quiz JSON + capstone brief + flashcards
   ↓
@@ -90,7 +90,7 @@ Optimizer Agent → student analytics → improvement report → creator action 
 - **Framework:** FastAPI + Pydantic v2
 - **ORM:** SQLAlchemy 2.0 (async) + Alembic (migrations)
 - **Auth:** Supabase Auth (magic link, Google/GitHub OAuth, JWT)
-- **Task Queue:** Redis (GCP Memorystore) + BullMQ via Python (RQ/arq or Celery)
+- **Task Queue:** Redis + BullMQ via Python (RQ/arq or Celery)
 - **API Style:** REST (all endpoints versioned at `/api/v1/`) + WebSocket for real-time pipeline + analytics
 - **Agent Orchestration:** LangGraph supervisor pattern — 7 agents, stateful pipeline, checkpointing
 
@@ -101,7 +101,7 @@ Optimizer Agent → student analytics → improvement report → creator action 
 - **UI Components:** Radix UI primitives (accessible, keyboard-navigable)
 - **State Management:** Zustand (client state) + TanStack Query (server state)
 - **Design:** Clean, professional — blue accent (#2563EB) on white/light-gray, Inter typography
-- **Deployment:** GCP Cloud Run
+- **Deployment:** Docker container on any Docker-compatible platform
 
 ### Mobile Application
 - **Framework:** React Native + Expo SDK 52+
@@ -113,31 +113,26 @@ Optimizer Agent → student analytics → improvement report → creator action 
 
 ### Database & Storage
 - **Primary DB:** Supabase (PostgreSQL 16 + pgvector extension)
-- **Cache/Queue:** Redis via GCP Memorystore
-- **Object Storage:** GCP Cloud Storage (media files, certificates, slides)
-- **Content Delivery:** GCP Cloud CDN (signed URLs for private content)
+- **Cache/Queue:** Redis (sessions, rate limiting, job queue, pipeline checkpoint state)
+- **Object Storage:** Supabase Storage (media files, certificates, slides)
 - **Search Index:** Algolia (marketplace course search)
 
 ### AI & Machine Learning
-- **Text Generation:** OpenAI GPT-4o / GPT-4o-mini (primary), Anthropic Claude (fallback)
-- **Embeddings:** OpenAI text-embedding-3-small (1536d) via pgvector
-- **Speech-to-Text:** OpenAI Whisper API
-- **Text-to-Speech:** OpenAI TTS API + ElevenLabs API (voice cloning)
-- **Speech-to-Speech:** Pipeline: Whisper STT → GPT-4o → OpenAI TTS
-- **Image Generation:** OpenAI DALL-E 3 + Ideogram API
-- **Video Rendering:** FFmpeg on GCP Cloud Batch
+- **Text Generation:** Gemini 3.5 Flash (primary, all agentic tasks)
+- **Embeddings:** Gemini Embedding 2 (1536d) via pgvector
+- **Speech-to-Text:** Gemini 3.5 Flash (multimodal)
+- **Text-to-Speech:** Gemini TTS + ElevenLabs API (voice cloning)
+- **Video Rendering:** FFmpeg (background worker, no GPU needed)
 - **Plagiarism Check:** Originality.ai
-- **PII Detection:** Microsoft Presidio (self-hosted on Cloud Run)
-- **AI Observability:** Langfuse (self-hosted on Cloud Run or Cloud-hosted)
+- **PII Detection:** Microsoft Presidio (self-hosted)
+- **AI Observability:** Langfuse (self-hosted or cloud-hosted)
 
-### GCP Cloud Infrastructure
-- **Compute:** Cloud Run (backend APIs, web frontend, workers)
-- **Batch Processing:** Cloud Batch (FFmpeg video rendering, parallel jobs)
-- **Networking:** VPC, Cloud Load Balancer, Cloud CDN, Cloud Armor WAF
-- **CI/CD:** Cloud Build + Artifact Registry + Cloud Deploy
-- **Monitoring:** Cloud Logging, Cloud Monitoring, Error Reporting, Cloud Trace
-- **Secrets:** Secret Manager
-- **IAM:** Service accounts with least-privilege roles
+### Infrastructure (Container-Based)
+- **Compute:** Docker containers (backend APIs, web frontend, workers) on any hosting platform
+- **Video Rendering:** Background worker with FFmpeg (no GPU needed)
+- **CI/CD:** GitHub Actions (lint → type check → test → build → deploy)
+- **Monitoring:** Prometheus + Grafana (dashboards, alerting)
+- **Secrets:** Environment variables / secret store per platform
 
 ### Third-Party APIs
 - **Email:** SendGrid (transactional emails, launch sequences, notifications)
@@ -200,7 +195,7 @@ edugenie/
 │   ├── stack.md
 │   ├── api-design.md
 │   ├── database.md
-│   ├── gcp-infrastructure.md
+│   ├── supabase-infrastructure.md
 │   ├── integrations.md
 │   ├── mobile.md
 │   └── deployment.md
@@ -272,7 +267,7 @@ edugenie/
 │       ├── services/, hooks/, store/, utils/
 │
 ├── infra/
-│   ├── terraform/                    # GCP IaC
+│   ├── terraform/                    # Infrastructure IaC
 │   │   ├── main.tf, variables.tf, outputs.tf
 │   │   ├── modules/ (compute, network, storage, monitoring, cicd)
 │   │   └── environments/ (dev, staging, prod)
@@ -313,12 +308,12 @@ edugenie/
 
 | Service | Estimated Monthly Cost |
 |---------|----------------------|
-| Cloud Run (backend + workers) | ~$80 |
-| Cloud Storage + CDN (media) | ~$40 |
-| Memorystore (Redis) | ~$25 |
-| Cloud Batch (FFmpeg) | ~$20 |
+| Hosting (compute) | ~$80 |
+| Storage + CDN | ~$40 |
+| Redis | ~$25 |
+| FFmpeg rendering | ~$20 |
 | Supabase (Pro) | ~$25 |
-| OpenAI API (AI pipeline) | ~$500 (variable) |
+| Gemini API (AI pipeline) | ~$500 (variable) |
 | ElevenLabs API (voice) | ~$100 |
 | SendGrid (email) | ~$15 |
 | Twilio (WhatsApp) | ~$10 |

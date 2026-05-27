@@ -3,7 +3,7 @@
 ## Platform
 
 - **Primary DB:** Supabase (PostgreSQL 16 + pgvector extension)
-- **Cache/Queue:** Redis via GCP Memorystore
+- **Cache/Queue:** Redis
 - **ORM:** SQLAlchemy 2.0 (async)
 - **Migrations:** Alembic
 
@@ -48,7 +48,7 @@
 | stripe_price_id | VARCHAR(100) | Stripe price reference |
 | topic_brief | JSONB | Original submission |
 | language | VARCHAR(10) | Primary language (e.g., 'en') |
-| thumbnail_url | TEXT | Cloud Storage URL |
+| thumbnail_url | TEXT | Supabase Storage URL |
 | total_duration_min | INTEGER | Sum of lesson durations |
 | difficulty | VARCHAR(20) | beginner / intermediate / advanced |
 | created_at | TIMESTAMPTZ | |
@@ -83,10 +83,10 @@
 | module_id | UUID FK → modules | |
 | position | INTEGER | Ordering (1-based) |
 | title | VARCHAR(300) | |
-| script_url | TEXT | Cloud Storage URL for script |
-| video_url | TEXT | Cloud Storage signed URL for MP4 |
-| slides_url | TEXT | Cloud Storage URL for PPTX |
-| captions_url | TEXT | Cloud Storage URL for SRT |
+| script_url | TEXT | Supabase Storage URL for script |
+| video_url | TEXT | Supabase Storage signed URL for MP4 |
+| slides_url | TEXT | Supabase Storage URL for PPTX |
+| captions_url | TEXT | Supabase Storage URL for SRT |
 | thumbnail_url | TEXT | |
 | duration_min | INTEGER | |
 | word_count | INTEGER | Script word count |
@@ -202,7 +202,7 @@
 | id | UUID PK | |
 | enrollment_id | UUID FK → enrollments | |
 | verification_code | VARCHAR(16) UNIQUE | Alphanumeric, 16 chars |
-| pdf_url | TEXT | Cloud Storage URL |
+| pdf_url | TEXT | Supabase Storage URL |
 | badge_json | JSONB | Open Badge format |
 | status | VARCHAR(20) | active / revoked / revised |
 | issued_at | TIMESTAMPTZ | |
@@ -229,7 +229,7 @@
 | course_id | UUID FK → courses | |
 | stage | VARCHAR(50) | intelligence / architect / scriptwriter / mediaforge / evaluator / launchpad / optimizer |
 | status | VARCHAR(50) | running / completed / failed / approved |
-| model_used | VARCHAR(100) | e.g., 'gpt-4o' |
+| model_used | VARCHAR(100) | e.g., 'gemini-3.5-flash' |
 | tokens_used | INTEGER | |
 | cost_usd | DECIMAL(10,6) | |
 | started_at | TIMESTAMPTZ | |
@@ -279,7 +279,7 @@
 
 ## Vector Database (pgvector)
 
-- **Embeddings Model:** OpenAI `text-embedding-3-small` (1536 dimensions)
+- **Embeddings Model:** Gemini Embedding 2 (1536 dimensions)
 - **Extension:** `pgvector` on Supabase PostgreSQL
 
 ### Use Cases
@@ -299,13 +299,13 @@ Score = 0.65 × vector_similarity + 0.35 × BM25_text_score
 
 - **Tool:** Alembic with async SQLAlchemy
 - **Pattern:** Additive-only migrations for 2 releases; destructive migrations require dual-write period + explicit rollback script in PR
-- **CI/CD:** Migrations run as part of Cloud Build deploy step
+- **CI/CD:** Migrations run as part of CI/CD deploy step
 - **Rollback:** `alembic downgrade -1` with verification script
 - **Multi-tenant isolation:** `organization_id` on every table; Supabase RLS policies enforce tenant isolation
 
 ### Backup & Recovery
 - Hourly Supabase snapshots
-- Cloud Storage object versioning enabled
+- Supabase Storage object versioning enabled
 - RPO < 1hr, RTO < 3hrs
 - Supabase PostgreSQL with 1 primary + 1 read replica
 - PgBouncer connection pooling
@@ -317,6 +317,6 @@ Score = 0.65 × vector_similarity + 0.35 × BM25_text_score
 - **Multi-tenant:** `organization_id` + `creator_id` on every table; Supabase RLS policies enforce tenant isolation
 - **PII Encryption:** AES-256 at application level for student names/emails; TLS 1.3 in transit
 - **Creator Content:** Creator owns all AI-generated content — EduGenie claims no IP or training rights
-- **Voice Model Audio:** Encrypted in Cloud Storage; accessible only by creator's account and ElevenLabs
+- **Voice Model Audio:** Encrypted in Supabase Storage; accessible only by creator's account and ElevenLabs
 - **Compliance:** GDPR right-to-access (30-day export), right-to-deletion (90-day processing), DPA with sub-processors
 - **Student PII:** Stored in isolated tables; never passed to LLM prompts; behavioral data uses anonymous student IDs

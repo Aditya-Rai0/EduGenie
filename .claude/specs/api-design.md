@@ -205,7 +205,7 @@ Roles: admin | creator | student | enterprise_admin | affiliate
 
 ## Data Encryption & Security
 
-- **At Rest:** AES-256 for PII (student names/emails) at application level; Cloud Storage server-side encryption (AES-256); Supabase encryption at rest
-- **In Transit:** TLS 1.3 enforced for all external traffic; VPC internal traffic encrypted by default
+- **At Rest:** AES-256 for PII (student names/emails) at application level; Supabase Storage server-side encryption (AES-256); Supabase encryption at rest
+- **In Transit:** TLS 1.3 enforced for all external traffic; internal traffic encrypted by default
 - **API Security:** JWT (1hr expiry) + refresh tokens (30-day rotation), Pydantic v2 input validation, CORS whitelist
-- **Cloud Armor:** OWASP Top 10 rules, rate limiting, DDoS protection
+- **Rate Limiting:** OWASP Top 10 rules, rate limiting, DDoS protection

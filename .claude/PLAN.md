@@ -23,7 +23,7 @@ Phase 3: Growth         Month 7–12   ░░░░░░░░░░░░░�
 
 | Milestone | Target | Deliverable | Gate Criteria |
 |-----------|--------|-------------|---------------|
-| M0 - Foundation Complete | Month 2 | GCP infra provisioned, DB schema, auth, CI/CD, dev env | Empty course created via API E2E; CI/CD green |
+| M0 - Foundation Complete | Month 2 | Infrastructure provisioned, DB schema, auth, CI/CD, dev env | Empty course created via API E2E; CI/CD green |
 | M1 - Alpha Launch | Month 4 | Full 7-agent pipeline, Creator Studio, LearnSpace, Stripe | 10-module course built < 4hrs; first paying student |
 | M2 - Beta Launch | Month 6 | Marketplace, affiliates, analytics, multi-language, mobile | 800 creators; $35K MRR; 5K courses |
 | M3 - GA Launch | Month 12 | Enterprise batch, adaptive paths, public API, SOC 2 start | 5K creators; $180K MRR; 30K courses |
@@ -42,7 +42,7 @@ Phase 0 ──► Phase 1 ──► Phase 2 ──► Phase 3
 
 ```
 Phase 0 (Foundation)
-├── GCP Infrastructure (Terraform)
+├── Infrastructure (Terraform)
 ├── Supabase Schema + Auth
 ├── FastAPI Scaffold
 ├── Next.js Scaffold
@@ -137,9 +137,9 @@ Phase 3 (Growth & Enterprise)
 
 | Risk | Impact | Likelihood | Mitigation |
 |------|--------|------------|------------|
-| AI cost per course exceeds $12 | Financial | Medium | Model routing (GPT-4o-mini for simple tasks); narration caching by hash |
+| AI cost per course exceeds $12 | Financial | Medium | Model routing (Gemini 3.5 Flash for all tasks); narration caching by hash |
 | Pipeline hallucinations > 2% | Quality | Medium | [VERIFY] flags on uncertain claims; human review gates before video |
-| Cloud Run cold start latency | Performance | Low | Min instances = 1; CPU always-on for workers; connection pooling |
+| Container cold start latency | Performance | Low | Min instances = 1; CPU always-on for workers; connection pooling |
 | Supabase pgvector performance | Performance | Medium | Index tuning; hybrid search (0.65 vector + 0.35 BM25); read replica |
 | ElevenLabs voice training quality | Quality | Low | Minimum 10-30 min audio required; test-before-deploy flow |
 | Stripe Connect onboarding friction | Adoption | Medium | Express dashboard; guided onboarding flow; test mode for creators |
