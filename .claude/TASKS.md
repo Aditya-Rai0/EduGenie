@@ -1,155 +1,283 @@
 # TASKS.md — EduGenie OS
 
-Development plan in dependency-minimized phases. Each row is one mergeable unit of work; implement on the listed branch.
-Branch convention: `feature/<repo-name>` — use a short kebab-case slug.
-Status: ✅ Completed or ❌ Pending
-References: CLAUDE.md, EduGenie_OS_PRD_Compact_v1.0.pdf.
+Executable development roadmap organized in dependency-minimized phases. Each row is a mergeable unit of work.
+
+**Branch convention:** `feature/<kebab-case-slug>`  
+**Status legend:** ✅ Completed · ▶️ In Progress · ❌ Pending  
 
 ---
 
-## Phase P0 · Foundation (Month 1–2)
+## Phase 0 · Foundation & Infrastructure
 
-No cloud or product logic. Everything downstream assumes this exists.
+Zero product logic. Everything downstream depends on these being correct.
 
-| Task | Description | Branch | Dependencies | Status |
-| :--- | :--- | :--- | :--- | :--- |
-| P0-1 · Infrastructure setup & IAM | Infrastructure setup & IAM | `feature/infra-setup` | — | ❌ Pending |
-| P0-2 · Supabase DB + Auth | PostgreSQL 16 schema + pgvector extension, Auth bootstrap (magic link, OAuth), RLS policies, Alembic migrations scaffold | `feature/db-auth-bootstrap` | P0-1 | ❌ Pending |
-| P0-3 · Backend + Frontend skeleton | FastAPI app scaffold (config, DI, health endpoint) + Next.js 14 App Router shell (layout, routing, Tailwind, Radix UI) | `feature/app-skeleton` | P0-2 | ❌ Pending |
-| P0-4 · Redis + Job Queue | Redis setup, BullMQ task queue for async course builds + video renders | `feature/queue-redis` | P0-1 | ❌ Pending |
-| P0-5 · LangGraph orchestrator | Supervisor agent skeleton, pipeline state machine, checkpointing, stage transition logic | `feature/langgraph-base` | P0-3 | ❌ Pending |
-| P0-6 · Intelligence + Architect agents (F1, F2) | Market research agent (web search, competitor scrape, demand scoring) + Curriculum architect agent (Bloom's taxonomy, module/lesson structure) | `feature/agents-intel-arch` | P0-4, P0-5 | ❌ Pending |
-| P0-7 · Creator OS shell (F8) | Topic brief input UI + Curriculum review & reorder interface | `feature/ui-creator-shell` | P0-3, P0-6 | ❌ Pending |
-| P0-8 · CI/CD pipeline | GitHub Actions triggers, Docker builds, Container Registry, staging deploy to Container, blue/green traffic split | `feature/ci-cd-pipeline` | P0-1 | ❌ Pending |
-
----
-
-## Phase P1 · Alpha Pipeline (Month 3–4)
-
-Depends on P0. AI agents, Creator Studio, LearnSpace, Stripe payments, and mobile scaffold.
-
-| Task | Description | Branch | Dependencies | Status |
-| :--- | :--- | :--- | :--- | :--- |
-| P1-1 · Scriptwriter + MediaForge agents (F3, F4) | Lesson script writing (parallel, 2K–4K words each) + Slide generation (python-pptx, Gemini), ElevenLabs TTS narration, FFmpeg video render with Gemini captions | `feature/agents-media` | P0-5 | ❌ Pending |
-| P1-2 · Evaluator + Launchpad agents (F5, F6) | Quiz generator (MCQ/T/F/fill-blank, 5–12 per module), capstone + rubric + flashcards + Sales page HTML, pricing rec, 6-email sequence, 15 social posts | `feature/agents-eval-launch` | P0-5 | ❌ Pending |
-| P1-3 · Creator Studio full review (F8) | 6-stage review flow: Market → Curriculum → Scripts → Slides/Video → Quizzes → Launch. Inline editing, regeneration-with-note, approval gates, progress tracking | `feature/ui-creator-review` | P0-7, P1-1, P1-2 | ❌ Pending |
-| P1-4 · LearnSpace player + assessments (F14, F15) | Video player (captions, speed, chapters, auto-resume), note-taking, quiz interface, certificate auto-generation (PDF/PNG), LinkedIn deeplink, public verification page | `feature/ui-learnspace` | P0-3, P1-1, P1-2 | ❌ Pending |
-| P1-5 · Stripe payments + Connect (F17) | Stripe Checkout, subscriptions (Starter/Creator/Studio/Enterprise), Connect Express payouts, webhook handling, promo codes, Stripe Tax | `feature/stripe-payments` | P0-3 | ❌ Pending |
-| P1-6 · Voice Studio (F9) | Audio upload (10–30 min), ElevenLabs voice model training, quality scoring, pronunciation dictionary, test & deploy UI | `feature/voice-studio` | P0-3, P1-1 | ❌ Pending |
-| P1-7 · Mobile scaffold (Expo) | React Native + Expo SDK 52 setup, navigation (auth/learn/marketplace/profile), Supabase auth, basic course player screen | `feature/mobile-scaffold` | P0-3 | ❌ Pending |
-| P1-8 · Notifications + SendGrid/Twilio | WebSocket notification system, in-app notifications table, SendGrid transactional emails (welcome, enrollment, certificate, weekly digest), Twilio WhatsApp (enrollment, reminders, receipts) | `feature/notifications-setup` | P0-3, P0-4 | ❌ Pending |
+| Task | Branch | Status |
+|------|--------|--------|
+| P0-1 · Monorepo scaffold & root config (pyproject.toml, gitignore, prettier, Docker Compose) | `feature/monorepo-scaffold` | ✅ Completed |
+| P0-2 · GitHub Actions CI/CD (lint → typecheck → test → Docker build → deploy) | `feature/github-actions` | ✅ Completed |
+| P0-3 · Supabase project setup (DB, Storage, Auth providers, RLS templates) | `feature/supabase-config` | ✅ Completed |
+| P0-4 · Environment variable templates (`.env.dev.example`, `.env.main.example`) | `feature/env-templates` | ✅ Completed |
+| P0-5 · Docker Compose production-grade (PostgreSQL 16 + Redis 7 with healthchecks, volumes, networking) | `feature/docker-compose` | ✅ Completed |
+| P0-6 · Terraform module stubs (compute, network, storage, monitoring, CI/CD, env presets) | `feature/terraform-stubs` | ❌ Pending |
+| P0-7 · `.pre-commit-config.yaml` (ruff, mypy, ESLint, prettier hooks) | `feature/pre-commit` | ❌ Pending |
+| P0-8 · Cloud Build → GitHub Actions migration cleanup (remove `infra/cloudbuild.yaml`) | `feature/cleanup-cloudbuild` | ❌ Pending |
 
 ---
 
-## Phase P2 · Public Beta (Month 5–6)
+## Phase 1 · Backend Data Layer (ORM, Migrations, Auth)
 
-Depends on P1. Marketplace, affiliates, analytics, multi-language, and white-label.
+Depends on P0. No API routes yet — pure data layer.
 
-| Task | Description | Branch | Dependencies | Status |
-| :--- | :--- | :--- | :--- | :--- |
-| P2-1 · Optimizer agent (F7) | Weekly post-launch analysis: drop-off heatmap, quiz failure patterns, discussion mining, sentiment NLP, prioritized improvement report with one-click fix links | `feature/agent-optimizer` | P1-1, P1-2 | ❌ Pending |
-| P2-2 · Marketplace + Algolia (F16) | Public course catalog with Algolia search (faceted filters, autocomplete, personalized ranking), AI recommendations, free preview lessons, trending collections | `feature/marketplace-algolia` | P1-5 | ❌ Pending |
-| P2-3 · Affiliates + Revenue (F12, F10) | Affiliate link generation, real-time conversion tracking, Stripe Connect payouts, fraud detection. Revenue dashboard: earnings by course/channel/period, refund rate, MoM growth, tax docs | `feature/affiliate-revenue` | P1-5 | ❌ Pending |
-| P2-4 · Multi-language (F13) | 6 languages (EN/ES/PT/FR/DE/JA) via Gemini + ElevenLabs, cultural localization, language-native voice models, localized sales pages with hreflang SEO, PPP pricing | `feature/multi-language` | P1-1, P1-2 | ❌ Pending |
-| P2-5 · White-label + Promo codes | White-label storefront with custom domain CNAME, brand customization (colors, logo, fonts), promo code engine (Stripe Coupon API, %/fixed, max uses, validity window) | `feature/whitelabel-promo` | P1-5 | ❌ Pending |
-| P2-6 · Course versioning (F11) | Selective regeneration per module/lesson, version history, student change notifications, content staleness scanner, 3 active versions per course | `feature/course-versioning` | P1-1, P1-3 | ❌ Pending |
-| P2-7 · Mobile EAS builds | EAS Build config for iOS TestFlight + Android internal track, push notifications (Expo + FCM), deep linking, Stripe SDK integration for mobile payments | `feature/mobile-eas-builds` | P1-7 | ❌ Pending |
-
----
-
-## Phase P3 · Growth & Enterprise (Month 7–12)
-
-Depends on P2. Enterprise batch generation, advanced analytics, and compliance.
-
-| Task | Description | Branch | Dependencies | Status |
-| :--- | :--- | :--- | :--- | :--- |
-| P3-1 · Enterprise batch (F18) | CSV upload (5–30 parallel builds), SME routing + review links, Kanban dashboard for batch tracking, cost estimation before confirmation | `feature/enterprise-batch` | P1-3, P1-1 | ❌ Pending |
-| P3-2 · Advanced analytics | Cohort analysis, lesson completion heatmaps, per-question failure analysis, cross-course comparison dashboards, automated PDF/CSV exports, weekly AI narrative | `feature/advanced-analytics` | P2-1, P2-3 | ❌ Pending |
-| P3-3 · Adaptive learning paths | Branching curriculum with conditional module unlocks, AI-recommended remedial content for struggling students, personalized pace adjustment | `feature/adaptive-learning` | P1-4, P2-1 | ❌ Pending |
-| P3-4 · SSO/SAML + SCORM/xAPI | Enterprise SSO (SAML/OIDC), SCORM 1.2/2004 export, xAPI statement generation for LMS integration, role provisioning via SCIM | `feature/enterprise-sso-scorm` | P0-2 | ❌ Pending |
-| P3-5 · Public API + rate limits | Public REST API release with API key auth (multi-model, scoped per endpoint), rate limiting tiers (200/2000 req/min), developer docs with OpenAPI | `feature/public-api` | P0-3 | ❌ Pending |
-| P3-6 · Compliance + SOC 2 | Compliance course templates (medical/legal/financial), mandatory disclaimer injection, PII scan (Presidio), SOC 2 Type II audit preparation, GDPR/CCPA data export & deletion flows | `feature/compliance-templates` | P1-3 | ❌ Pending |
-| P3-7 · PWA + native features | PWA wrapper with offline support, service worker caching for video segments, push notifications via FCM, Apple Pay / Google Pay integration | `feature/pwa-mobile` | P1-7, P2-7 | ❌ Pending |
+| Task | Branch | Status |
+|------|--------|--------|
+| P1-1 · FastAPI project baseline, config, DI, Pydantic v2 schemas (all 14 files) | `feature/backend-baseline` | ✅ Completed |
+| P1-2 · SQLAlchemy ORM models — Part 1 (organization, creator, course, course_version, module, lesson) | `feature/backend-models-core` | ❌ Pending |
+| P1-3 · SQLAlchemy ORM models — Part 2 (quiz, student, enrollment, progress, quiz_attempt, sale, affiliate) | `feature/backend-models-relations` | ❌ Pending |
+| P1-4 · SQLAlchemy ORM models — Part 3 (certificate, discussion, pipeline_run, improvement_report, notification, audit_log) | `feature/backend-models-aux` | ❌ Pending |
+| P1-5 · Alembic initial migration (all 19 tables + pgvector extension + indexes) | `feature/alembic-init` | ❌ Pending |
+| P1-6 · Alembic seed data & factory fixtures (test creators, courses, students) | `feature/alembic-seeds` | ❌ Pending |
+| P1-7 · Supabase client wrapper & connection pooling (reuse `app/dependencies.py`) | `feature/supabase-client` | ❌ Pending |
+| P1-8 · Auth service layer (signup, login, magic link, JWT validation, refresh tokens, role checking) | `feature/auth-service` | ❌ Pending |
+| P1-9 · RBAC middleware & Supabase RLS policy enforcement | `feature/rbac-middleware` | ❌ Pending |
+| P1-10 · Core utility modules (cache.py Redis client, queue.py task queue, storage.py Supabase Storage, webhook_handler.py) | `feature/core-utils` | ❌ Pending |
 
 ---
 
-## Phase P4 · Ecosystem & Scale
+## Phase 2 · Backend API Layer (REST Endpoints)
 
-Depends on P3. Optimization, security hardening, and GA launch.
+Depends on P1. Implements all API routes from CLAUDE.md spec (~55 endpoints).
 
-| Task | Description | Branch | Dependencies | Status |
-| :--- | :--- | :--- | :--- | :--- |
-| P4-1 · Cost optimization | AI model routing (Gemini 3.5 Flash for low-complexity tasks), narration caching by script hash, preemptible VMs for FFmpeg, CDN edge caching, Container min-instances=0 for non-critical services | `feature/scale-optimization` | P1-1, P1-2 | ❌ Pending |
-| P4-2 · Security hardening | Penetration testing (third-party), bug bounty program launch, prompt injection audit, OWASP Top 10 scan, WAF tuning, secret rotation automation | `feature/security-hardening` | P3-6 | ❌ Pending |
-| P4-3 · Load testing (k6) | 300 concurrent pipeline builds, 5,000 concurrent video streams, 1,000 API req/sec sustained, 48-hour soak test pre-major release | `feature/load-testing` | P3-1, P3-5 | ❌ Pending |
-| P4-4 · DR & runbooks | Disaster recovery drills, RPO < 1hr / RTO < 3hrs validation, runbook documentation, automated failover testing, backup restoration drills | `feature/dr-runbooks` | P0-1, P0-8 | ❌ Pending |
-| P4-5 · GA launch | Marketing assets (demo video, case studies, landing page), partner program launch, public pricing page, self-serve onboarding flow, first customer onboarding program | `feature/ga-launch` | All P0–P3 | ❌ Pending |
+| Task | Branch | Status |
+|------|--------|--------|
+| P2-1 · Auth routes (signup, login, magic-link, refresh, me, OAuth callbacks) | `feature/api-auth` | ❌ Pending |
+| P2-2 · Course CRUD routes (create, read, update, list, delete, topic brief submit, pipeline status, publish) | `feature/api-courses` | ❌ Pending |
+| P2-3 · Creator profile & settings routes (profile CRUD, revenue dashboard) | `feature/api-creators` | ❌ Pending |
+| P2-4 · Module & Lesson routes (CRUD, script fetch, video signed URL, slide download) | `feature/api-lessons` | ❌ Pending |
+| P2-5 · Quiz routes (list, update, submit attempt, get results) | `feature/api-quizzes` | ❌ Pending |
+| P2-6 · Enrollment & Progress routes (enroll, progress update, course complete, list enrollments) | `feature/api-enrollments` | ❌ Pending |
+| P2-7 · Certificate routes (auto-generate on completion, verify by code) | `feature/api-certificates` | ❌ Pending |
+| P2-8 · Analytics routes (course overview, per-lesson, per-quiz, improvement report) | `feature/api-analytics` | ❌ Pending |
+| P2-9 · Marketplace routes (Algolia search proxy, course detail, recommendations) | `feature/api-marketplace` | ❌ Pending |
+| P2-10 · Affiliate routes (link generation, stats, payout history) | `feature/api-affiliates` | ❌ Pending |
+| P2-11 · Enterprise batch routes (CSV job submission, status, retry) | `feature/api-batch` | ❌ Pending |
+| P2-12 · Voice routes (train model, list models, test TTS, delete model) | `feature/api-voice` | ❌ Pending |
+| P2-13 · Webhook handlers (Stripe events, SendGrid events, Twilio status callbacks) | `feature/api-webhooks` | ❌ Pending |
+| P2-14 · WebSocket endpoints (pipeline live `/ws/pipeline/{job_id}`, analytics live `/ws/analytics/{course_id}`, notifications `/ws/notifications/{user_id}`) | `feature/ws-endpoints` | ❌ Pending |
+| P2-15 · Health & monitoring routes (basic health, detailed health, Prometheus metrics scrape) | `feature/api-health` | ❌ Pending |
+| P2-16 · Pipeline stage approval/regeneration routes (approve stage, regenerate with feedback) | `feature/api-pipeline` | ❌ Pending |
 
 ---
 
-## Dependency graph (summary)
+## Phase 3 · AI Agent Pipeline (Gemini + LangGraph)
 
-```text
-P0 (Foundation) ──────────────────────────────────────────────────────────┐
-  │                                                                        │
-  ├─ P0-1 (Infra)  ← P0-2 (DB) ← P0-3 (Skeleton) ← P0-5 (LangGraph) ─────┐│
-  │                P0-1 ← P0-4 (Queue) ← P0-6 (Intel+Arch)               ││
-  │                P0-3 + P0-6 ← P0-7 (UI Shell)                        ││
-  │                P0-1 ← P0-8 (CI/CD)                                   ││
-  │                                                                       ▼▼
-P1 (Alpha Pipeline) ──────────────────────────────────────────────────────┘│
-  │                                                                         │
-  ├─ P1-1 (Script+Media) · P1-2 (Eval+Launch) ← P0-5                     │
-  ├─ P1-3 (Creator Studio) ← P0-7 + P1-1 + P1-2                           │
-  ├─ P1-4 (LearnSpace) ← P0-3 + P1-1 + P1-2                               │
-  ├─ P1-5 (Stripe) ← P0-3                                                  │
-  ├─ P1-6 (Voice) ← P0-3 + P1-1                                           │
-  ├─ P1-7 (Mobile) ← P0-3                                                  │
-  └─ P1-8 (Notifications) ← P0-3 + P0-4                                   │
-                                                                           ▼
-P2 (Public Beta) ─────────────────────────────────────────────────────────┘
+Depends on P1. Implements the 7-agent orchestrated pipeline.
+
+| Task | Branch | Status |
+|------|--------|--------|
+| P3-1 · LangGraph state machine (agent state, checkpointing, supervisor, stage transition graph) | `feature/langgraph-core` | ❌ Pending |
+| P3-2 · Web search tool (Google Custom Search + Bing Search API integration) | `feature/tool-web-search` | ❌ Pending |
+| P3-3 · Competitor scrape tool (market intelligence data extraction) | `feature/tool-scrape` | ❌ Pending |
+| P3-4 · Intelligence Agent (F1) — market demand analysis, competitor comparison, angle recommendations | `feature/agent-intelligence` | ❌ Pending |
+| P3-5 · Architect Agent (F2) — Bloom's taxonomy curriculum design, module/lesson structure | `feature/agent-architect` | ❌ Pending |
+| P3-6 · Scriptwriter Agent (F3) — parallel lesson script generation with [VERIFY] flags, 2K–4K words | `feature/agent-scriptwriter` | ❌ Pending |
+| P3-7 · Slide generation tool (python-pptx, JSON → PPTX + PNG frames) | `feature/tool-slides` | ❌ Pending |
+| P3-8 · Voice/TTS tool (Gemini TTS + ElevenLabs API, narration caching by script hash) | `feature/tool-voice` | ❌ Pending |
+| P3-9 · Video rendering tool (FFmpeg: PNG frames + MP3 → 1080p MP4) | `feature/tool-video` | ❌ Pending |
+| P3-10 · Caption generation tool (Gemini STT → SRT captions) | `feature/tool-captions` | ❌ Pending |
+| P3-11 · MediaForge Agent (F4) — orchestrates slides + TTS + video + captions per module | `feature/agent-mediaforge` | ❌ Pending |
+| P3-12 · Evaluator Agent (F5) — quiz generation (MCQ/T/F/fill-blank 5–12 per module), capstone brief, flashcards | `feature/agent-evaluator` | ❌ Pending |
+| P3-13 · Launchpad Agent (F6) — sales page HTML, pricing recommendation, 6-email sequence, 15 social posts | `feature/agent-launchpad` | ❌ Pending |
+| P3-14 · Optimizer Agent (F7) — post-launch analytics, drop-off analysis, sentiment NLP, improvement reports | `feature/agent-optimizer` | ❌ Pending |
+| P3-15 · Pipeline orchestrator (sequential execution with review gates, parallel agent dispatch, error recovery, cost tracking) | `feature/pipeline-orchestrator` | ❌ Pending |
+
+---
+
+## Phase 4 · External Integrations
+
+Depends on P1. Plugs into third-party services.
+
+| Task | Branch | Status |
+|------|--------|--------|
+| P4-1 · Stripe integration (Checkout sessions, Connect payouts, webhook parsing, subscription management, promo codes) | `feature/integration-stripe` | ❌ Pending |
+| P4-2 · SendGrid integration (email templates, transactional workflows, template engine) | `feature/integration-sendgrid` | ❌ Pending |
+| P4-3 · Twilio integration (WhatsApp message sending, webhook handling, opt-out management) | `feature/integration-twilio` | ❌ Pending |
+| P4-4 · Algolia integration (index management, search proxy endpoint, recommendation engine, sync on publish) | `feature/integration-algolia` | ❌ Pending |
+| P4-5 · ElevenLabs integration (voice cloning, pronunciation dictionary, voice model management) | `feature/integration-elevenlabs` | ❌ Pending |
+| P4-6 · Langfuse AI observability (LLM call tracing, cost tracking, latency monitoring) | `feature/integration-langfuse` | ❌ Pending |
+| P4-7 · PostHog product analytics (event tracking, user properties, feature flags) | `feature/integration-posthog` | ❌ Pending |
+| P4-8 · Originality.ai plagiarism check (script scanning pre-publish gate) | `feature/integration-originality` | ❌ Pending |
+| P4-9 · Microsoft Presidio PII detection (creator upload scanning, content sanitization) | `feature/integration-presidio` | ❌ Pending |
+
+---
+
+## Phase 5 · Frontend Web — Creator OS
+
+Depends on P1 (API layer). The creator-facing application.
+
+| Task | Branch | Status |
+|------|--------|--------|
+| P5-1 · Next.js project scaffold (package.json, App Router layout, Tailwind theme, Radix UI primitives, Inter font, Zustand + TanStack Query setup) | `feature/web-scaffold` | ❌ Pending |
+| P5-2 · Auth UI (login page, signup page, magic-link flow, OAuth buttons, session persistence, route guards) | `feature/web-auth` | ❌ Pending |
+| P5-3 · Shared UI library (button, input, card, modal, toast, table, badge, spinner, skeleton) | `feature/web-ui-library` | ❌ Pending |
+| P5-4 · Layout components (sidebar nav, top header, breadcrumbs, mobile drawer) | `feature/web-layout` | ❌ Pending |
+| P5-5 · API client & hooks (Supabase client, Axios wrapper, useAuth, useCourses, useWebSocket, TanStack Query hooks) | `feature/web-api-layer` | ❌ Pending |
+| P5-6 · Creator Dashboard (course list with status badges, pipeline progress bars, quick action buttons) | `feature/web-dashboard` | ❌ Pending |
+| P5-7 · Topic Brief submission form (topic, audience, depth, tone, language — validates + submits to pipeline) | `feature/web-topic-brief` | ❌ Pending |
+| P5-8 · Creator Studio — 6-stage review flow (Market → Curriculum → Scripts → Slides/Video → Quizzes → Launch) with approve/regenerate gates | `feature/web-creator-studio` | ❌ Pending |
+| P5-9 · Course creation/edit form (title, description, price, thumbnail, version management) | `feature/web-course-edit` | ❌ Pending |
+| P5-10 · Voice Studio (audio upload widget, model training status, test playback, voice selection dropdown) | `feature/web-voice-studio` | ❌ Pending |
+| P5-11 · Analytics Dashboard (charts: enrollments, completion rate, drop-off, quiz scores; AI narrative summaries) | `feature/web-analytics` | ❌ Pending |
+| P5-12 · Revenue Dashboard (sales chart, payout history, subscription tier, MoM comparison) | `feature/web-revenue` | ❌ Pending |
+| P5-13 · Affiliate Dashboard (link creation, click/conversion stats, commission history) | `feature/web-affiliates` | ❌ Pending |
+| P5-14 · Settings page (profile edit, notification prefs, payment methods, brand settings) | `feature/web-settings` | ❌ Pending |
+
+---
+
+## Phase 6 · Frontend Web — LearnSpace
+
+Depends on P1. The student-facing application.
+
+| Task | Branch | Status |
+|------|--------|--------|
+| P6-1 · Marketplace landing page (course cards, category filters, search bar, trending section) | `feature/web-marketplace` | ❌ Pending |
+| P6-2 · Course detail page (description, curriculum accordion, preview video, enrollment CTA, pricing) | `feature/web-course-detail` | ❌ Pending |
+| P6-3 · Course player (video player with captions/speed/chapters/auto-resume, side panel with lesson list, notes textarea) | `feature/web-course-player` | ❌ Pending |
+| P6-4 · Quiz interface (question timer, option selection, submit confirmation, results overlay with explanations) | `feature/web-quiz` | ❌ Pending |
+| P6-5 · Certificate view & download (animated badge, LinkedIn share, PDF download, public verify URL) | `feature/web-certificate` | ❌ Pending |
+| P6-6 · Discussion Q&A per lesson (question form, AI-generated answer, creator verify badge, threaded replies) | `feature/web-discussions` | ❌ Pending |
+| P6-7 · Enterprise batch dashboard (Kanban board, CSV upload wizard, bulk progress tracking, SME assignment) | `feature/web-enterprise-batch` | ❌ Pending |
+| P6-8 · Notifications center (in-app notification list, real-time WebSocket updates, mark-read, bell badge) | `feature/web-notifications` | ❌ Pending |
+| P6-9 · Search & discovery (Algolia autocomplete, faceted filters by category/level/price, personalized recommendations) | `feature/web-search` | ❌ Pending |
+
+---
+
+## Phase 7 · Mobile App (React Native + Expo)
+
+Depends on P1. Cross-platform learner experience.
+
+| Task | Branch | Status |
+|------|--------|--------|
+| P7-1 · Expo project scaffold (package.json, app.json, navigation structure, theme, providers) | `feature/mobile-scaffold` | ❌ Pending |
+| P7-2 · Auth screens (login, signup, magic link, token persistence with expo-secure-store) | `feature/mobile-auth` | ❌ Pending |
+| P7-3 · API service layer (Axios/fetch wrapper, Supabase client, endpoint hooks with TanStack Query) | `feature/mobile-api-layer` | ❌ Pending |
+| P7-4 · LearnSpace screens (My Courses list, course detail, video player with expo-av) | `feature/mobile-learnspace` | ❌ Pending |
+| P7-5 · Quiz screens (question card swipe, answer selection, results summary) | `feature/mobile-quiz` | ❌ Pending |
+| P7-6 · Marketplace screens (browse grid, search with Algolia, course detail with enrollment) | `feature/mobile-marketplace` | ❌ Pending |
+| P7-7 · Profile & Certificate screens (user profile, certificate gallery, download/ share, settings) | `feature/mobile-profile` | ❌ Pending |
+| P7-8 · Push notifications (Expo Push Tokens, FCM config, deep link handling, notification preferences) | `feature/mobile-notifications` | ❌ Pending |
+| P7-9 · EAS Build profiles (development, preview, production) + TestFlight + Google Play submission config | `feature/mobile-eas` | ❌ Pending |
+
+---
+
+## Phase 8 · Testing & QA
+
+Depends on relevant implementation phases.
+
+| Task | Branch | Status |
+|------|--------|--------|
+| P8-1 · Backend unit tests — models & services (pytest, factory-boy fixtures, coverage > 80%) | `feature/test-backend-unit` | ❌ Pending |
+| P8-2 · Backend unit tests — agents & pipeline (mock Gemini, verify agent outputs, cost tracking) | `feature/test-backend-agents` | ❌ Pending |
+| P8-3 · Backend integration tests — API endpoints (httpx AsyncClient, VCR.py for external API cassettes) | `feature/test-backend-integration` | ❌ Pending |
+| P8-4 · Backend E2E tests — full pipeline (12 fixed topic briefs, verify course output artifacts) | `feature/test-backend-e2e` | ❌ Pending |
+| P8-5 · Frontend component tests (Jest + @testing-library/react, all 14 page modules) | `feature/test-frontend-unit` | ❌ Pending |
+| P8-6 · Frontend E2E tests (Playwright: signup → create course → publish flow) | `feature/test-frontend-e2e` | ❌ Pending |
+| P8-7 · Mobile unit tests (Jest + React Native Testing Library, screens & hooks) | `feature/test-mobile-unit` | ❌ Pending |
+| P8-8 · Mobile E2E tests (Detox / Maestro: enrollment, quiz, certificate flows) | `feature/test-mobile-e2e` | ❌ Pending |
+| P8-9 · Load tests (k6: 300 concurrent builds, 5,000 video streams, 1,000 req/s, 48h soak) | `feature/test-load` | ❌ Pending |
+| P8-10 · AI evaluation suite (nightly pipeline tests on 12 briefs, weekly human review, quarterly red-team) | `feature/test-ai-eval` | ❌ Pending |
+
+---
+
+## Phase 9 · Production & Monitoring
+
+Depends on P0 and deployment readiness.
+
+| Task | Branch | Status |
+|------|--------|--------|
+| P9-1 · Prometheus metrics instrumentation (request count, latency, AI cost, pipeline failures, queue depth) | `feature/monitoring-metrics` | ❌ Pending |
+| P9-2 · Grafana dashboards (API performance, AI pipeline, business KPIs, infrastructure) | `feature/monitoring-dashboards` | ❌ Pending |
+| P9-3 · Alerting rules & notification channels (Grafana alerts → Slack/PagerDuty, 7 alert conditions) | `feature/monitoring-alerts` | ❌ Pending |
+| P9-4 · Sentry error tracking (backend + frontend, source maps, performance tracing) | `feature/monitoring-sentry` | ❌ Pending |
+| P9-5 · Terraform production environment (infra state, secrets, DNS, SSL) | `feature/terraform-prod` | ❌ Pending |
+| P9-6 · Production Docker images & Supabase RLS policies (hardening, migration automation) | `feature/prod-deploy` | ❌ Pending |
+| P9-7 · Backup & disaster recovery (hourly DB backup, RPO < 1hr / RTO < 3hrs, runbook) | `feature/prod-dr` | ❌ Pending |
+| P9-8 · Security hardening (CORS whitelist, rate limiting, WAF, secret rotation, penetration test) | `feature/prod-security` | ❌ Pending |
+
+---
+
+## Dependency Graph
+
+```
+P0 (Foundation & Infra)
+  ├── P0-1 through P0-8 — parallelizable, no cross-deps
   │
-  ├─ P2-1 (Optimizer) ← P1-1 + P1-2
-  ├─ P2-2 (Marketplace) ← P1-5
-  ├─ P2-3 (Affiliate+Revenue) ← P1-5
-  ├─ P2-4 (Multi-language) ← P1-1 + P1-2
-  ├─ P2-5 (White-label) ← P1-5
-  ├─ P2-6 (Versioning) ← P1-1 + P1-3
-  └─ P2-7 (Mobile EAS) ← P1-7
-                                                                           
-P3 (Growth & Enterprise) ────────────────────────────────────────────────┘
+P1 (Backend Data Layer) ← P0 (all)
+  ├── P1-1 ✅ baseline → P1-2/3/4 models → P1-5 migration → P1-6 seeds
+  ├── P1-7 client → P1-8 auth → P1-9 RBAC
+  └── P1-10 utilities (parallel with P1-8)
   │
-  ├─ P3-1 (Enterprise Batch) ← P1-3 + P1-1
-  ├─ P3-2 (Advanced Analytics) ← P2-1 + P2-3
-  ├─ P3-3 (Adaptive Learning) ← P1-4 + P2-1
-  ├─ P3-4 (SSO/SCORM) ← P0-2
-  ├─ P3-5 (Public API) ← P0-3
-  ├─ P3-6 (Compliance) ← P1-3
-  └─ P3-7 (PWA) ← P1-7 + P2-7
-
-P4 (Ecosystem & Scale) ──────────────────────────────────────────────────┘
-  └─ All P4 tasks ← P0–P3 complete
+P2 (API Routes) ← P1 (all)
+  ├── P2-1 auth routes ← P1-8/9
+  ├── P2-2 through P2-16 — mostly parallel after P1
+  │
+P3 (AI Agents) ← P1 (models/migrations)
+  ├── P3-1 LangGraph core
+  ├── P3-2/3 tools → P3-4/5 agents → P3-6 through P3-14 agents → P3-15 orchestrator
+  │
+P4 (Integrations) ← P1 (all) — parallelizable with P2/P3
+  ├── P4-1 through P4-9 — independent of each other
+  │
+P5 (Creator OS) ← P1 (all) + P2 (API)
+  ├── P5-1 scaffold → P5-2/3/4/5 → P5-6 through P5-14
+  │
+P6 (LearnSpace) ← P1 (all) + P2 (API)
+  ├── P6-1 through P6-9 — mostly parallel after P5-1
+  │
+P7 (Mobile) ← P1 (all) + P2 (API)
+  ├── P7-1 scaffold → P7-2 through P7-9
+  │
+P8 (Testing) ← respective implementation phases
+  ├── P8-1/2 ← P1 · P8-3/4 ← P2 · P8-5/6 ← P5/6 · P8-7/8 ← P7 · P8-9/10 ← all
+  │
+P9 (Production) ← P0 + P2 (deployable API)
+  ├── P9-1/2/3/4 — parallel · P9-5/6/7/8 — sequential
 ```
 
-## Feature-to-phase mapping
+## Phase Summary
 
-| Feature | Description | Phase | Agent / Component |
-| :--- | :--- | :--- | :--- |
-| F1 | Market Intelligence & Validation | P0-6 | Intelligence Agent |
-| F2 | Curriculum Architect | P0-6 | Architect Agent |
-| F3 | Lesson Script Engine | P1-1 | Scriptwriter Agent |
-| F4 | Slide Deck & Media Production | P1-1 | MediaForge Agent |
-| F5 | Assessment & Evaluator Engine | P1-2 | Evaluator Agent |
-| F6 | Launchpad — Sales Page, Pricing & Launch | P1-2 | Launchpad Agent |
-| F7 | Optimizer — Post-Launch Improvement | P2-1 | Optimizer Agent |
-| F8 | Creator Studio — Review & Edit Interface | P0-7, P1-3 | Creator OS |
-| F9 | Voice Studio — Voice Model Training | P1-6 | Creator OS |
-| F10 | Analytics Dashboard | P2-3 | Creator OS |
-| F11 | Course Update & Version Management | P2-6 | Creator OS |
-| F12 | Affiliate & Revenue System | P2-3 | Creator OS |
-| F13 | Multi-Language Course Generation | P2-4 | Pipeline |
-| F14 | Course Player & Progress Tracking | P1-4 | LearnSpace |
-| F15 | Assessment Interface & Certificates | P1-4 | LearnSpace |
-| F16 | Course Marketplace & Discovery | P2-2 | LearnSpace |
-| F17 | Payments & Subscriptions | P1-5 | Commerce |
-| F18 | Enterprise Batch Generation | P3-1 | Commerce |
+| Phase | Tasks | Completed | Pending | Est. Duration |
+|-------|-------|-----------|---------|---------------|
+| P0 · Foundation & Infrastructure | 8 | 5 | 3 | Week 1–2 |
+| P1 · Backend Data Layer | 10 | 1 | 9 | Week 2–4 |
+| P2 · Backend API Routes | 16 | 0 | 16 | Week 4–7 |
+| P3 · AI Agent Pipeline | 15 | 0 | 15 | Week 6–10 |
+| P4 · External Integrations | 9 | 0 | 9 | Week 5–8 |
+| P5 · Frontend Web — Creator OS | 14 | 0 | 14 | Week 7–11 |
+| P6 · Frontend Web — LearnSpace | 9 | 0 | 9 | Week 9–12 |
+| P7 · Mobile App | 9 | 0 | 9 | Week 10–14 |
+| P8 · Testing & QA | 10 | 0 | 10 | Week 7–15 |
+| P9 · Production & Monitoring | 8 | 0 | 8 | Week 13–16 |
+| **Total** | **108** | **6** | **102** | **~16 weeks** |
+
+## Feature-to-Phase Mapping
+
+| Feature | Description | Phase | Primary Component |
+|---------|-------------|-------|-------------------|
+| F1 | Market Intelligence | P3-4 | Intelligence Agent |
+| F2 | Curriculum Architect | P3-5 | Architect Agent |
+| F3 | Lesson Script Engine | P3-6 | Scriptwriter Agent |
+| F4 | Media Production | P3-7–P3-11 | MediaForge Agent |
+| F5 | Assessment Engine | P3-12 | Evaluator Agent |
+| F6 | Launchpad | P3-13 | Launchpad Agent |
+| F7 | Optimizer | P3-14 | Optimizer Agent |
+| F8 | Creator Studio | P5-8 | Creator OS |
+| F9 | Voice Studio | P5-10 | Creator OS |
+| F10 | Analytics Dashboard | P5-11 | Creator OS |
+| F11 | Course Versioning | P5-9 | Creator OS |
+| F12 | Affiliate & Revenue | P4-1, P5-12, P5-13 | Creator OS + Stripe |
+| F13 | Multi-Language | P3-15 | Pipeline Config |
+| F14 | Course Player & Progress | P6-3 | LearnSpace |
+| F15 | Assessments & Certificates | P6-4, P6-5 | LearnSpace |
+| F16 | Course Marketplace | P6-1, P6-2, P6-9 | LearnSpace |
+| F17 | Payments & Subscriptions | P4-1 | Commerce (Stripe) |
+| F18 | Enterprise Batch | P6-7 | Commerce |
