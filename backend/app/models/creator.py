@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from typing import Any
 
 from sqlalchemy import CheckConstraint, ForeignKey, Index, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -36,7 +37,7 @@ class Creator(Base, TimestampMixin):
         String(20), nullable=False, default="starter"
     )
     voice_model_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    brand_settings: Mapped[dict] = mapped_column(
+    brand_settings: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict, server_default="{}"
     )
     display_name: Mapped[str | None] = mapped_column(String(255), nullable=True)

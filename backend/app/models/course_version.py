@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from typing import Any
 
 from sqlalchemy import ForeignKey, Integer, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -29,6 +30,6 @@ class CourseVersion(Base, TimestampMixin):
     )
     version_number: Mapped[int] = mapped_column(Integer, nullable=False)
     changelog: Mapped[str | None] = mapped_column(Text, nullable=True)
-    snapshot: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    snapshot: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
 
     course = relationship("Course", back_populates="versions")

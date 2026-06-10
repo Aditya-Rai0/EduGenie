@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from decimal import Decimal
+from typing import Any
 
 from sqlalchemy import (
     CheckConstraint,
@@ -70,7 +71,7 @@ class Course(Base, TimestampMixin):
     stripe_price_id: Mapped[str | None] = mapped_column(
         String(100), nullable=True
     )
-    topic_brief: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    topic_brief: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     language: Mapped[str] = mapped_column(
         String(10), nullable=False, default="en"
     )
