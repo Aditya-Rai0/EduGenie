@@ -46,3 +46,6 @@ class Lesson(Base, TimestampMixin):
     )
 
     module = relationship("Module", back_populates="lessons")
+    progress_set = relationship(
+        "Progress", back_populates="lesson", lazy="selectin"
+    )

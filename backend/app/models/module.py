@@ -59,3 +59,6 @@ class Module(Base):
     lessons = relationship(
         "Lesson", back_populates="module", lazy="selectin", order_by="Lesson.position"
     )
+    quizzes = relationship(
+        "Quiz", back_populates="module", lazy="selectin"
+    )
