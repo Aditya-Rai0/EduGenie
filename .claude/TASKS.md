@@ -31,7 +31,7 @@ Depends on P0. No API routes yet — pure data layer.
 | Task | Branch | Status |
 |------|--------|--------|
 | P1-1 · FastAPI project baseline, config, DI, Pydantic v2 schemas (all 14 files) | `feature/backend-baseline` | ✅ Completed |
-| P1-2 · SQLAlchemy ORM models — Part 1 (organization, creator, course, course_version, module, lesson) | `feature/backend-models-core` | ❌ Pending |
+| P1-2 · SQLAlchemy ORM models — Part 1 (organization, creator, course, course_version, module, lesson) | `feature/backend-models-core` | ✅ Completed |
 | P1-3 · SQLAlchemy ORM models — Part 2 (quiz, student, enrollment, progress, quiz_attempt, sale, affiliate) | `feature/backend-models-relations` | ❌ Pending |
 | P1-4 · SQLAlchemy ORM models — Part 3 (certificate, discussion, pipeline_run, improvement_report, notification, audit_log) | `feature/backend-models-aux` | ❌ Pending |
 | P1-5 · Alembic initial migration (all 19 tables + pgvector extension + indexes) | `feature/alembic-init` | ❌ Pending |
