@@ -94,3 +94,9 @@ class Course(Base, TimestampMixin):
     modules = relationship(
         "Module", back_populates="course", lazy="selectin", order_by="Module.position"
     )
+    enrollments = relationship(
+        "Enrollment", back_populates="course", lazy="selectin"
+    )
+    sales = relationship(
+        "Sale", back_populates="course", lazy="selectin"
+    )

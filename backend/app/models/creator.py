@@ -47,3 +47,6 @@ class Creator(Base, TimestampMixin):
     courses = relationship(
         "Course", back_populates="creator", lazy="selectin"
     )
+    affiliates = relationship(
+        "Affiliate", back_populates="creator", lazy="selectin"
+    )
